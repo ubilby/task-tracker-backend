@@ -3,7 +3,7 @@ from domain.models.user import User
 
 class UserService:
 
-    def __init__(self, user_repo: UserRepository):
+    def __init__(self, user_repo: UserRepository) -> None:
         self.user_repo = user_repo
 
     def register_user(self, nickname: str) -> User:

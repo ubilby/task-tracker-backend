@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from domain.models.task import Task
 from domain.models.user import User
@@ -45,5 +45,5 @@ class TaskService:
             raise ValueError("Пользователь не найден")
         return self.task_repo.list_by_user(user)
     
-    def get_task(self, task_id: int):
+    def get_task(self, task_id: int) -> Optional[Task]:
         return self.task_repo.get_by_id(task_id)
