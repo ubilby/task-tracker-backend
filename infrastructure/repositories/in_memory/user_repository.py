@@ -17,8 +17,13 @@ class InMemoryUserRepository(UserRepository):
 
         return user
 
-    def get_by_id(self, user_id: int) -> Optional[User]:
-        return next((u for u in self._users if u.id == user_id), None)
+    def get_user(self, user_id: int) -> Optional[User]:
+        for user in self._users:
+            if user.id == user_id:
+
+                return user
+        
+        return None
 
     def exists_by_nickname(self, nickname: str) -> bool:
         return any(u.nickname == nickname for u in self._users)

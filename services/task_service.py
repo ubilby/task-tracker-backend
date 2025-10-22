@@ -13,7 +13,7 @@ class TaskService:
         self.user_repo = user_repo
 
     def create_task(self, user_id: int, text: str) -> Task:
-        user = self.user_repo.get_by_id(user_id)
+        user = self.user_repo.get_user(user_id)
 
         if not user:
             raise ValueError("Пользователь не найден")
@@ -22,7 +22,7 @@ class TaskService:
 
         return self.task_repo.save(task)
 
-    def mark_done(self, task_id: int):
+    def mark_done(self, task_id: int) -> Task:
         task = self.task_repo.get_by_id(task_id)
 
         if not task:
@@ -30,8 +30,9 @@ class TaskService:
 
         task.mark_done()
         self.task_repo.save(task)
+        return task
 
-    def reopen(self, task_id: int):
+    def reopen(self, task_id: int) -> Task:
         task = self.task_repo.get_by_id(task_id)
         if not task:
             raise ValueError("Задача не найдена")
@@ -39,8 +40,10 @@ class TaskService:
         task.reopen()
         self.task_repo.save(task)
 
+        return task
+
     def list_user_tasks(self, user_id: int) -> List[Task]:
-        user = self.user_repo.get_by_id(user_id)
+        user = self.user_repo.get_user(user_id)
         if not user:
             raise ValueError("Пользователь не найден")
         return self.task_repo.list_by_user(user)

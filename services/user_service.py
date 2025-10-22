@@ -1,8 +1,8 @@
+from typing import Optional
 from domain.repositories.user_repository import UserRepository
 from domain.models.user import User
 
 class UserService:
-
     def __init__(self, user_repo: UserRepository) -> None:
         self.user_repo = user_repo
 
@@ -13,3 +13,8 @@ class UserService:
         user = User(id=None, nickname=nickname)
 
         return self.user_repo.save(user)
+
+    def get_user(self, id: int = 0) -> Optional[User]:
+        user: Optional[User] = self.user_repo.get_user(id)
+
+        return user

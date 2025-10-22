@@ -11,7 +11,7 @@ from application.task_app import TaskApp
 class TaskTrackerApp:
     """Фасад верхнего уровня, объединяющий все части приложения."""
 
-    def __init__(self, user_repo: Optional[UserRepository], task_repo: Optional[TaskRepository]) -> None:
+    def __init__(self, user_repo: Optional[UserRepository] = None, task_repo: Optional[TaskRepository] = None) -> None:
         user_repo = InMemoryUserRepository() if user_repo is None else user_repo
         task_repo = InMemoryTaskRepository() if task_repo is None else task_repo
 
@@ -20,3 +20,8 @@ class TaskTrackerApp:
 
         self.users = UserApp(user_service)
         self.tasks = TaskApp(task_service)
+
+
+def get_app_instance() -> TaskTrackerApp:
+
+    return TaskTrackerApp()
