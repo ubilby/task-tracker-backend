@@ -9,7 +9,7 @@ class InMemoryTaskRepository(TaskRepository):
         self._tasks: List[Task] = []
         self._nexd_id = 1
 
-    def save(self, task: Task) -> Task:
+    async def save(self, task: Task) -> Task:
         if (task.id is None):
             task.id = self._nexd_id
             self._nexd_id += 1
@@ -23,8 +23,8 @@ class InMemoryTaskRepository(TaskRepository):
 
         return task
 
-    def get_by_id(self, task_id: int) -> Optional[Task]:
+    async def get_by_id(self, task_id: int) -> Optional[Task]:
         return next((t for t in self._tasks if t.id == task_id), None)
 
-    def list_by_user(self, user: User) -> List[Task]:
+    async def list_by_user(self, user: User) -> List[Task]:
         return [t for t in self._tasks if t.creator.id == user.id]

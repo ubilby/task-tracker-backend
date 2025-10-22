@@ -9,7 +9,7 @@ class InMemoryUserRepository(UserRepository):
         self._users: List[User] = []
         self._next_id = 1
 
-    def save(self, user: User) -> User:
+    async def save(self, user: User) -> User:
         if user.id is None:
             user.id = self._next_id
             self._next_id += 1
@@ -17,7 +17,7 @@ class InMemoryUserRepository(UserRepository):
 
         return user
 
-    def get_user(self, user_id: int) -> Optional[User]:
+    async def get_user(self, user_id: int) -> Optional[User]:
         for user in self._users:
             if user.id == user_id:
 
@@ -25,5 +25,5 @@ class InMemoryUserRepository(UserRepository):
 
         return None
 
-    def exists_by_nickname(self, nickname: str) -> bool:
+    async def exists_by_nickname(self, nickname: str) -> bool:
         return any(u.nickname == nickname for u in self._users)

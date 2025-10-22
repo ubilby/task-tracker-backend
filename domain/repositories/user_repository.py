@@ -4,11 +4,11 @@ from domain.models.user import User
 
 class UserRepository(Protocol):
 
-    def save(self, user: User) -> User:
+    async def save(self, user: User) -> User:
         ...
 
-    def get_user(self, user_id: int) -> Optional[User]:
+    async def get_user(self, user_id: int) -> Optional[User]:
         ...
 
-    def exists_by_nickname(self, nickname: str) -> bool:
+    async def exists_by_nickname(self, nickname: str) -> bool:
         ...

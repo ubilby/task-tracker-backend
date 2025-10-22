@@ -9,10 +9,10 @@ class UserApp:
     def __init__(self, user_service: UserService) -> None:
         self.user_service = user_service
 
-    def register_user(self, nickname: str) -> User:
-        return self.user_service.register_user(nickname)
+    async def register_user(self, nickname: str) -> User:
+        return await self.user_service.register_user(nickname)
 
-    def get_user(self, id: int) -> Optional[User]:
-        user: Optional[User] = self.user_service.get_user(id)
+    async def get_user(self, id: int) -> Optional[User]:
+        user: Optional[User] = await self.user_service.get_user(id)
 
         return user

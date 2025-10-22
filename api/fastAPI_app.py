@@ -26,23 +26,24 @@ BOT_TOKEN = getenv("BOT_TOKEN")
 # ------------------- USERS -------------------
 
 @user_router.post("/", response_model=UserResponse)
-def create_user(
+async def create_user(
     request: UserCreateRequest,
     authorization: str = Header(None),
     tracker: TaskTrackerApp = Depends(get_app_instance)
 ):
     is_bot = authorization == f"Bearer {BOT_TOKEN}"
 
-    if is_bot:
-        return tracker.users.register_user(nickname=request.nickname)
+    if not is_bot:
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
 
-    return JSONResponse(status_code=400, content={"detail": "no permission"})
+    user = await tracker.users.register_user(nickname=request.nickname)
+    return user
 
 
 # ------------------- TASKS -------------------
 
 @task_router.post("/", response_model=TaskResponse)
-def create_task(
+async def create_task(
     request: TaskCreateRequest,
     authorization: str = Header(None),
     tracker: TaskTrackerApp = Depends(get_app_instance)
@@ -57,15 +58,13 @@ def create_task(
     if not hasattr(request, "user_id") or request.user_id is None:
         raise HTTPException(status_code=400, detail="user_id обязателен для бота")
 
-    # user = tracker.users.get_user(request.user_id)
-    # if not user:
-    #     raise HTTPException(status_code=404, detail="User not found")
+    task = await tracker.tasks.create_task(text=request.text, user_id=request.user_id)
 
-    return tracker.tasks.create_task(text=request.text, user_id=request.user_id)
+    return task
 
 
 @task_router.get("/", response_model=List[TaskResponse])
-def list_tasks(
+async def list_tasks(
     user_id: Optional[int] = None,
     authorization: str = Header(None),
     tracker: TaskTrackerApp = Depends(get_app_instance)
@@ -80,31 +79,28 @@ def list_tasks(
     if user_id is None:
         raise HTTPException(status_code=400, detail="user_id обязателен")
 
-    # user = tracker.users.get_user(user_id)
-    # if not user:
-    #     raise HTTPException(status_code=404, detail="User not found")
-
-    return tracker.tasks.list_tasks(user_id)
+    tasks = await tracker.tasks.list_tasks(user_id)
+    return tasks
 
 
 @task_router.get("/{task_id}", response_model=TaskResponse)
-def get_task(
+async def get_task(
     task_id: int,
     authorization: str = Header(None),
     tracker: TaskTrackerApp = Depends(get_app_instance)
 ):
     """Получить одну задачу по ID."""
     is_bot = authorization == f"Bearer {BOT_TOKEN}"
+
     if not is_bot:
         raise HTTPException(status_code=403, detail="Недостаточно прав")
 
-    return tracker.tasks.get_task(task_id)
-    # if not task:
-    #     raise HTTPException(status_code=404, detail="Task not found")
+    task = await tracker.tasks.get_task(task_id)
+    return task
 
 
 @task_router.patch("/{task_id}", response_model=TaskResponse)
-def update_task(
+async def update_task(
     task_id: int,
     request: TaskUpdateStatusRequest,
     authorization: str = Header(None),
@@ -115,14 +111,15 @@ def update_task(
     if not is_bot:
         raise HTTPException(status_code=403, detail="Недостаточно прав")
 
-    task = tracker.tasks.get_task(task_id)
+    task = await tracker.tasks.get_task(task_id)
+
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
     if request.done:
-        task = tracker.tasks.mark_done(task_id)
+        task = await tracker.tasks.mark_done(task_id)
     else:
-        task = tracker.tasks.reopen(task_id)
+        task = await tracker.tasks.reopen(task_id)
 
     return task
 
