@@ -2,6 +2,7 @@ from typing import Protocol, Optional, List
 from domain.models.task import Task
 from domain.models.user import User
 
+
 class TaskRepository(Protocol):
 
     def save(self, task: Task) -> Task:

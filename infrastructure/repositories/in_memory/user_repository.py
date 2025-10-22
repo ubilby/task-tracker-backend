@@ -12,7 +12,7 @@ class InMemoryUserRepository(UserRepository):
     def save(self, user: User) -> User:
         if user.id is None:
             user.id = self._next_id
-            self._next_id +=1
+            self._next_id += 1
             self._users.append(user)
 
         return user
@@ -22,7 +22,7 @@ class InMemoryUserRepository(UserRepository):
             if user.id == user_id:
 
                 return user
-        
+
         return None
 
     def exists_by_nickname(self, nickname: str) -> bool:

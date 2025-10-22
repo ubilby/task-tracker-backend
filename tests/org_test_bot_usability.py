@@ -11,6 +11,7 @@ load_dotenv()
 client = TestClient(app)
 SUPERUSER_HEADERS = {"Authorization": f"Bearer {getenv('BOT_TOKEN')}"}
 
+
 @pytest.fixture
 def create_user():
     """Создаёт тестового пользователя и возвращает его JSON."""

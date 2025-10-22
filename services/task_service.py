@@ -1,10 +1,8 @@
 from typing import List, Optional
 
 from domain.models.task import Task
-from domain.models.user import User
 from domain.repositories.task_repository import TaskRepository
 from domain.repositories.user_repository import UserRepository
-
 
 
 class TaskService:
@@ -47,6 +45,6 @@ class TaskService:
         if not user:
             raise ValueError("Пользователь не найден")
         return self.task_repo.list_by_user(user)
-    
+
     def get_task(self, task_id: int) -> Optional[Task]:
         return self.task_repo.get_by_id(task_id)

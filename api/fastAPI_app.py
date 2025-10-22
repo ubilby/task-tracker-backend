@@ -3,7 +3,9 @@ from fastapi.responses import JSONResponse
 from typing import List, Optional
 
 from application.app import TaskTrackerApp, get_app_instance
-from api.schemas.task import TaskCreateRequest, TaskUpdateStatusRequest, TaskResponse
+from api.schemas.task import (
+    TaskCreateRequest, TaskUpdateStatusRequest, TaskResponse
+)
 from api.schemas.user import UserCreateRequest, UserResponse
 
 from dotenv import load_dotenv
@@ -34,7 +36,6 @@ def create_user(
     if is_bot:
         return tracker.users.register_user(nickname=request.nickname)
 
-    
     return JSONResponse(status_code=400, content={"detail": "no permission"})
 
 
@@ -108,7 +109,7 @@ def update_task(
     request: TaskUpdateStatusRequest,
     authorization: str = Header(None),
     tracker: TaskTrackerApp = Depends(get_app_instance)
-    ):
+):
     """Изменить статус (или в будущем текст) задачи."""
     is_bot = authorization == f"Bearer {BOT_TOKEN}"
     if not is_bot:
@@ -131,7 +132,7 @@ def update_task(
 @app.exception_handler(ValueError)
 async def value_error_exception_handler(request, exc: ValueError):
     """
-    Этот обработчик будет ловить ВСЕ ошибки ValueError, 
+    Этот обработчик будет ловить ВСЕ ошибки ValueError,
     вылетающие из твоего приложения, и превращать их в 400 Bad Request.
     """
     return JSONResponse(
@@ -144,4 +145,3 @@ async def value_error_exception_handler(request, exc: ValueError):
 
 app.include_router(user_router)
 app.include_router(task_router)
-

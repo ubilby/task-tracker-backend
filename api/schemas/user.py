@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 
+
 class UserCreateRequest(BaseModel):
     nickname: str
+
 
 class UserResponse(BaseModel):
     id: int

@@ -2,6 +2,7 @@ from typing import Optional
 from domain.repositories.user_repository import UserRepository
 from domain.models.user import User
 
+
 class UserService:
     def __init__(self, user_repo: UserRepository) -> None:
         self.user_repo = user_repo

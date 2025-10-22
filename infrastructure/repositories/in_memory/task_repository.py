@@ -22,9 +22,9 @@ class InMemoryTaskRepository(TaskRepository):
                     break
 
         return task
-    
+
     def get_by_id(self, task_id: int) -> Optional[Task]:
         return next((t for t in self._tasks if t.id == task_id), None)
-    
+
     def list_by_user(self, user: User) -> List[Task]:
         return [t for t in self._tasks if t.creator.id == user.id]

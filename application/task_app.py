@@ -1,8 +1,6 @@
 from typing import List
 from domain.models.task import Task
-from domain.models.user import User
 from services.task_service import TaskService
-# from services.user_service import UserService
 
 
 class TaskApp:

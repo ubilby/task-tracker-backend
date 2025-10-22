@@ -1,10 +1,14 @@
 import pytest
-from typing import Generator, List
+from typing import Generator, List, Optional
 from application.app import TaskTrackerApp
 from domain.models.user import User
 from domain.models.task import Task
-from infrastructure.repositories.in_memory.task_repository import InMemoryTaskRepository
-from infrastructure.repositories.in_memory.user_repository import InMemoryUserRepository
+from infrastructure.repositories.in_memory.task_repository import (
+    InMemoryTaskRepository
+)
+from infrastructure.repositories.in_memory.user_repository import (
+    InMemoryUserRepository
+)
 
 
 @pytest.fixture
@@ -28,7 +32,8 @@ class TestTaskTrackerApp:
     def test_create_task(self, app: TaskTrackerApp) -> None:
         """Проверяет создание задачи пользователем."""
         user: User = app.users.register_user("bob")
-        task: Task = app.tasks.create_task(user.id, "помыть посуду")  # type:ignore
+        assert user.id
+        task: Task = app.tasks.create_task(user.id, "помыть посуду")
 
         assert isinstance(task.id, int)
         assert task.text == "помыть посуду"
@@ -38,14 +43,17 @@ class TestTaskTrackerApp:
     def test_mark_done_and_reopen(self, app: TaskTrackerApp) -> None:
         """Проверяет смену статуса задачи."""
         user: User = app.users.register_user("kate")
-        task: Task = app.tasks.create_task(user.id, "купить хлеб")  # type:ignore
-
-        app.tasks.mark_done(task.id)  # type:ignore
-        updated: Task = app.tasks.get_task(task.id)  # type:ignore
+        assert user.id
+        task: Task = app.tasks.create_task(user.id, "купить хлеб")
+        assert task.id
+        app.tasks.mark_done(task.id)
+        updated: Optional[Task] = app.tasks.get_task(task.id)
+        assert not (updated is None)
         assert updated.done is True
 
-        app.tasks.reopen(task.id)  # type:ignore
-        reopened: Task = app.tasks.get_task(task.id)  # type:ignore
+        app.tasks.reopen(task.id)
+        reopened: Optional[Task] = app.tasks.get_task(task.id)
+        assert reopened
         assert reopened.done is False
 
     def test_list_tasks_by_user(self, app: TaskTrackerApp) -> None:
