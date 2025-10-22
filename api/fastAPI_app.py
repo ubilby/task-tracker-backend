@@ -33,8 +33,8 @@ async def create_user(
 ):
     is_bot = authorization == f"Bearer {BOT_TOKEN}"
 
-    if not is_bot:
-        raise HTTPException(status_code=403, detail="Недостаточно прав")
+#    if not is_bot:
+#        raise HTTPException(status_code=403, detail="Недостаточно прав")
 
     user = await tracker.users.register_user(nickname=request.nickname)
     return user
@@ -51,9 +51,8 @@ async def create_task(
     """Создать задачу. Бот должен указать user_id, пользователь определяется по токену."""
     is_bot = authorization == f"Bearer {BOT_TOKEN}"
 
-    if not is_bot:
-        # для пользователя: в будущем — определение по токену
-        raise HTTPException(status_code=403, detail="Недостаточно прав")
+#    if not is_bot:
+#        raise HTTPException(status_code=403, detail="Недостаточно прав")
 
     if not hasattr(request, "user_id") or request.user_id is None:
         raise HTTPException(status_code=400, detail="user_id обязателен для бота")
@@ -72,9 +71,8 @@ async def list_tasks(
     """Получить список задач пользователя (по user_id)."""
     is_bot = authorization == f"Bearer {BOT_TOKEN}"
 
-    if not is_bot:
-        # позже тут будет получение id пользователя из токена
-        raise HTTPException(status_code=403, detail="Недостаточно прав")
+#    if not is_bot:
+#        raise HTTPException(status_code=403, detail="Недостаточно прав")
 
     if user_id is None:
         raise HTTPException(status_code=400, detail="user_id обязателен")
@@ -92,8 +90,8 @@ async def get_task(
     """Получить одну задачу по ID."""
     is_bot = authorization == f"Bearer {BOT_TOKEN}"
 
-    if not is_bot:
-        raise HTTPException(status_code=403, detail="Недостаточно прав")
+#    if not is_bot:
+#        raise HTTPException(status_code=403, detail="Недостаточно прав")
 
     task = await tracker.tasks.get_task(task_id)
     return task
@@ -108,8 +106,8 @@ async def update_task(
 ):
     """Изменить статус (или в будущем текст) задачи."""
     is_bot = authorization == f"Bearer {BOT_TOKEN}"
-    if not is_bot:
-        raise HTTPException(status_code=403, detail="Недостаточно прав")
+#    if not is_bot:
+#        raise HTTPException(status_code=403, detail="Недостаточно прав")
 
     task = await tracker.tasks.get_task(task_id)
 

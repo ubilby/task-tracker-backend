@@ -29,7 +29,8 @@ class TaskTrackerApp:
         self.users = UserApp(user_service)
         self.tasks = TaskApp(task_service)
 
+temp = TaskTrackerApp()
 
 def get_app_instance() -> TaskTrackerApp:
 
-    return TaskTrackerApp()
+    return temp
