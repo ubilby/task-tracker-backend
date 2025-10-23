@@ -20,8 +20,8 @@ class TaskTrackerApp:
         user_repo: Optional[UserRepository] = None,
         task_repo: Optional[TaskRepository] = None
     ):
-        user_repo = InMemoryUserRepository() if user_repo is None else user_repo
-        task_repo = InMemoryTaskRepository() if task_repo is None else task_repo
+        user_repo = user_repo or InMemoryUserRepository()
+        task_repo = task_repo or InMemoryTaskRepository()
 
         user_service = UserService(user_repo)
         task_service = TaskService(task_repo, user_repo)

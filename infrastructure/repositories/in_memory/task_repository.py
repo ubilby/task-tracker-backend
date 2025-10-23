@@ -7,12 +7,12 @@ from domain.repositories.task_repository import TaskRepository
 class InMemoryTaskRepository(TaskRepository):
     def __init__(self):
         self._tasks: List[Task] = []
-        self._nexd_id = 1
+        self._next_id = 1
 
     async def save(self, task: Task) -> Task:
         if (task.id is None):
-            task.id = self._nexd_id
-            self._nexd_id += 1
+            task.id = self._next_id
+            self._next_id += 1
             self._tasks.append(task)
 
         else:

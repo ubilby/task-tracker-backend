@@ -3,27 +3,18 @@ from typing import Generator, List, Optional
 from application.app import TaskTrackerApp
 from domain.models.user import User
 from domain.models.task import Task
-from infrastructure.repositories.in_memory.task_repository import (
-    InMemoryTaskRepository
-)
-from infrastructure.repositories.in_memory.user_repository import (
-    InMemoryUserRepository
-)
 
 
 @pytest.fixture
 def app() -> Generator[TaskTrackerApp, None, None]:
     # тест InMemoryStaff
-    user_repo = InMemoryUserRepository()
-    task_repo = InMemoryTaskRepository()
-    yield TaskTrackerApp(user_repo=user_repo, task_repo=task_repo)
+    yield TaskTrackerApp()
 
 
 @pytest.mark.asyncio
 class TestTaskTrackerApp:
     """Тест-класс, покрывающий основные сценарии работы приложения."""
 
-    @pytest.mark.asyncio
     async def test_user_registration(self, app: TaskTrackerApp) -> None:
         """Проверяет регистрацию нового пользователя."""
         user: User = await app.users.register_user("alex")
@@ -31,7 +22,6 @@ class TestTaskTrackerApp:
         assert isinstance(user.id, int)
         assert user.nickname == "alex"
 
-    @pytest.mark.asyncio
     async def test_create_task(self, app: TaskTrackerApp) -> None:
         """Проверяет создание задачи пользователем."""
         user: User = await app.users.register_user("bob")
@@ -43,7 +33,6 @@ class TestTaskTrackerApp:
         assert task.done is False
         assert task.creator.id == user.id
 
-    @pytest.mark.asyncio
     async def test_mark_done_and_reopen(self, app: TaskTrackerApp) -> None:
         """Проверяет смену статуса задачи."""
         user: User = await app.users.register_user("kate")
@@ -60,7 +49,6 @@ class TestTaskTrackerApp:
         assert reopened
         assert reopened.done is False
 
-    @pytest.mark.asyncio
     async def test_list_tasks_by_user(self, app: TaskTrackerApp) -> None:
         """Проверяет получение списка задач конкретного пользователя."""
         user1: User = await app.users.register_user("alex")
@@ -78,3 +66,13 @@ class TestTaskTrackerApp:
         assert len(tasks_user1) == 2
         assert len(tasks_user2) == 1
         assert all(t.creator.id == user1.id for t in tasks_user1)
+
+    async def test_get_nonexistent_task(self, app: TaskTrackerApp) -> None:
+        """Проверяет получение несуществующей задачи."""
+        task: Optional[Task] = await app.tasks.get_task(999)
+        assert task is None
+
+    async def test_get_nonexistent_user(self, app: TaskTrackerApp) -> None:
+        """Проверяет получение несуществующего пользователя."""
+        user: Optional[User] = await app.users.get_user(999)
+        assert user is None
