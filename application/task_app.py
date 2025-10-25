@@ -23,3 +23,6 @@ class TaskApp:
 
     async def get_task(self, task_id: int) -> Task | None:
         return await self.task_service.get_task(task_id)
+    
+    async def delete_task(self, task_id: int) -> bool:
+        return await self.task_service.delete_task(task_id)

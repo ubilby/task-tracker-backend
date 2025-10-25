@@ -11,3 +11,7 @@ class UserResponse(BaseModel):
 
     class ConfigDict:
         from_attributes = True
+
+
+class DeleteResponse(BaseModel):
+    success: bool

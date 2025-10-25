@@ -1,17 +1,14 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 
-# --- Запрос на создание задачи пользователем ---
 class TaskCreateRequest(BaseModel):
     user_id: Optional[int]
     text: str
 
 
-# --- Запрос на создание задачи ботом (для конкретного пользователя) ---
-class TaskCreateForUserRequest(BaseModel):
-    user_id: int
-    text: str
+class TaskCreateByAdminRequest(BaseModel):
+    text: str = Field(..., description="Текст задачи")
 
 
 # --- Ответ API с задачей ---

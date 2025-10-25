@@ -30,3 +30,18 @@ class InMemoryTaskRepository(TaskRepository):
 
     async def list_by_user(self, user: User) -> List[Task]:
         return [t for t in tasks if t.creator.id == user.id]
+
+    async def delete_task(self, id: int) -> bool:
+        index = -1
+
+        for i, task in enumerate(tasks):
+            if task.id == id:
+                index = i
+                break
+
+        if index != -1:
+            tasks.pop(index)
+
+            return True
+
+        return False

@@ -18,3 +18,7 @@ class UserService:
     async def get_user(self, id: int = 0) -> Optional[User]:
 
         return await self.user_repo.get_user(id)
+
+    async def delete_user(self, id: int) -> bool:
+
+        return await self.user_repo.delete_user(id)

@@ -44,7 +44,12 @@ class TaskService:
         user = await self.user_repo.get_user(user_id)
         if not user:
             raise ValueError("Пользователь не найден")
+
         return await self.task_repo.list_by_user(user)
 
     async def get_task(self, task_id: int) -> Optional[Task]:
         return await self.task_repo.get_by_id(task_id)
+
+    async def delete_task(self, id: int) -> bool:
+
+        return await self.task_repo.delete_task(id)

@@ -5,9 +5,11 @@ from domain.models.user import User
 from domain.models.task import Task
 
 
+names: List[str] = ["Bob", "Alex", "Kate", "AnotherOne", "test", "Temp", ]
+
+
 @pytest.fixture
 def app() -> Generator[TaskTrackerApp, None, None]:
-    # тест InMemoryStaff
     yield TaskTrackerApp()
 
 
@@ -17,14 +19,16 @@ class TestTaskTrackerApp:
 
     async def test_user_registration(self, app: TaskTrackerApp) -> None:
         """Проверяет регистрацию нового пользователя."""
-        user: User = await app.users.register_user("alex")
+        name: str = names.pop()
+        user: User = await app.users.register_user(name)
 
         assert isinstance(user.id, int)
-        assert user.nickname == "alex"
+        assert user.nickname == name
 
     async def test_create_task(self, app: TaskTrackerApp) -> None:
         """Проверяет создание задачи пользователем."""
-        user: User = await app.users.register_user("bob")
+        name: str = names.pop()
+        user: User = await app.users.register_user(name)
         assert user.id
         task: Task = await app.tasks.create_task(user.id, "помыть посуду")
 
@@ -35,7 +39,8 @@ class TestTaskTrackerApp:
 
     async def test_mark_done_and_reopen(self, app: TaskTrackerApp) -> None:
         """Проверяет смену статуса задачи."""
-        user: User = await app.users.register_user("kate")
+        name: str = names.pop()
+        user: User = await app.users.register_user(name)
         assert user.id
         task: Task = await app.tasks.create_task(user.id, "купить хлеб")
         assert task.id
@@ -51,8 +56,9 @@ class TestTaskTrackerApp:
 
     async def test_list_tasks_by_user(self, app: TaskTrackerApp) -> None:
         """Проверяет получение списка задач конкретного пользователя."""
-        user1: User = await app.users.register_user("alex")
-        user2: User = await app.users.register_user("bob")
+        name1, name2 = names.pop(), names.pop()
+        user1: User = await app.users.register_user(name1)
+        user2: User = await app.users.register_user(name2)
 
         assert user1.id is not None
         await app.tasks.create_task(user1.id, "купить хлеб")

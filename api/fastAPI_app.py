@@ -4,9 +4,9 @@ from typing import List, Optional
 
 from application.app import TaskTrackerApp, get_app_instance
 from api.schemas.task import (
-    TaskCreateRequest, TaskUpdateStatusRequest, TaskResponse
+    TaskCreateRequest, TaskUpdateStatusRequest, TaskResponse, TaskCreateByAdminRequest
 )
-from api.schemas.user import UserCreateRequest, UserResponse
+from api.schemas.user import UserCreateRequest, UserResponse, DeleteResponse
 
 from dotenv import load_dotenv
 from os import getenv
@@ -37,8 +37,24 @@ async def create_user(
         raise HTTPException(status_code=403, detail="Недостаточно прав")
 
     user = await tracker.users.register_user(nickname=request.nickname)
+
     return user
 
+
+@user_router.delete("/{user_id}", response_model=DeleteResponse)
+async def delete_user(
+    user_id: int,
+    authorization: str = Header(None),
+    tracker: TaskTrackerApp = Depends(get_app_instance),
+):
+    """Удаление пользователя (только для бота/админа)"""
+    is_bot = authorization == f"Bearer {BOT_TOKEN}"
+    if not is_bot:
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    
+    success = await tracker.users.delete_user(user_id)
+
+    return DeleteResponse(success=success)
 
 # ------------------- TASKS -------------------
 
@@ -123,6 +139,39 @@ async def update_task(
 
     return task
 
+
+@task_router.post("/user/{user_id}/task/", response_model=TaskResponse)
+async def create_task_for_user(
+    user_id: int,
+    request: TaskCreateByAdminRequest,
+    authorization: str = Header(None),
+    tracker: TaskTrackerApp = Depends(get_app_instance),
+):
+    """Бот создаёт новую задачу для пользователя (всегда со статусом done=False)."""
+    is_bot = authorization == f"Bearer {BOT_TOKEN}"
+    if not is_bot:
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+
+    task = await tracker.tasks.create_task(
+        user_id=user_id,
+        text=request.text,
+    )
+    return task
+
+
+@task_router.delete("task/{task_id}", response_model=DeleteResponse)
+async def delete_task(
+    task_id: int,
+    authorization: str = Header(None),
+    tracker: TaskTrackerApp = Depends(get_app_instance),
+):
+    is_bot = authorization == f"Bearer {BOT_TOKEN}"
+    if not is_bot:
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    
+    success = await tracker.tasks.delete_task(task_id)
+
+    return DeleteResponse(success=success)
 
 # ------------------- REGISTER EXCEPTION HANDLER -------------------
 

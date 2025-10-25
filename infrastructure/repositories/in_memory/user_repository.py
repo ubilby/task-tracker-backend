@@ -28,4 +28,20 @@ class InMemoryUserRepository(UserRepository):
         return None
 
     async def exists_by_nickname(self, nickname: str) -> bool:
+
         return any(u.nickname == nickname for u in users)
+
+    async def delete_user(self, id: int) -> bool:
+        index = -1
+
+        for i, user in enumerate(users):
+            if user.id == id:
+                index = i
+                break
+
+        if index != -1:
+            users.pop(index)
+
+            return True
+
+        return False

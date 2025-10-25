@@ -12,3 +12,6 @@ class UserRepository(Protocol):
 
     async def exists_by_nickname(self, nickname: str) -> bool:
         ...
+
+    async def delete_user(self, id: int) -> bool:
+        ...

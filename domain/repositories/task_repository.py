@@ -13,3 +13,6 @@ class TaskRepository(Protocol):
 
     async def list_by_user(self, user: User) -> List[Task]:
         ...
+
+    async def delete_task(self, id: int) -> bool:
+        ...

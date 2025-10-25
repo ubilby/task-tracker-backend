@@ -83,8 +83,8 @@ class TestTaskAndUserServices:
     ) -> None:
         """Проверяет получение списка задач по пользователю."""
         user_service, task_service = services
-        user1: User = await user_service.register_user("alex")
-        user2: User = await user_service.register_user("bob")
+        user1: User = await user_service.register_user("he")
+        user2: User = await user_service.register_user("she")
 
         # создаём задачи
         assert user1.id is not None

@@ -16,3 +16,8 @@ class UserApp:
         user: Optional[User] = await self.user_service.get_user(id)
 
         return user
+
+    async def delete_user(self, id: int) -> bool:
+        result: bool = await self.user_service.delete_user(id)
+        
+        return result
