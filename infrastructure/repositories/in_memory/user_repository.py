@@ -3,6 +3,8 @@ from domain.models.user import User
 
 from domain.repositories.user_repository import UserRepository
 
+users: List[User] = []
+next_id: List[int] = [1]
 
 class InMemoryUserRepository(UserRepository):
     def __init__(self):
@@ -11,14 +13,14 @@ class InMemoryUserRepository(UserRepository):
 
     async def save(self, user: User) -> User:
         if user.id is None:
-            user.id = self._next_id
-            self._next_id += 1
-            self._users.append(user)
+            user.id = next_id[0]
+            next_id[0] += 1
+            users.append(user)
 
         return user
 
     async def get_user(self, user_id: int) -> Optional[User]:
-        for user in self._users:
+        for user in users:
             if user.id == user_id:
 
                 return user
@@ -26,4 +28,4 @@ class InMemoryUserRepository(UserRepository):
         return None
 
     async def exists_by_nickname(self, nickname: str) -> bool:
-        return any(u.nickname == nickname for u in self._users)
+        return any(u.nickname == nickname for u in users)
