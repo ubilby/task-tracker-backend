@@ -28,10 +28,12 @@ class TaskService:
 
         task.mark_done()
         await self.task_repo.save(task)
+
         return task
 
     async def reopen(self, task_id: int) -> Task:
         task = await self.task_repo.get_by_id(task_id)
+
         if not task:
             raise ValueError("Задача не найдена")
 
@@ -42,6 +44,7 @@ class TaskService:
 
     async def list_user_tasks(self, user_id: int) -> List[Task]:
         user = await self.user_repo.get_user(user_id)
+
         if not user:
             raise ValueError("Пользователь не найден")
 
@@ -51,5 +54,4 @@ class TaskService:
         return await self.task_repo.get_by_id(task_id)
 
     async def delete_task(self, id: int) -> bool:
-
         return await self.task_repo.delete_task(id)

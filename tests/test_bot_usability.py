@@ -1,5 +1,3 @@
-import pytest
-import uuid
 from fastapi.testclient import TestClient
 from api.fastAPI_app import app
 from api.schemas.task import TaskCreateRequest, TaskUpdateStatusRequest
@@ -13,8 +11,8 @@ SUPERUSER_HEADERS = {"Authorization": f"Bearer {getenv('BOT_TOKEN')}"}
 nickname = "TestUser"
 data: dict = {"nickname": nickname}
 
-class TestBotUsability:
 
+class TestBotUsability:
     def test_create_user_and_cannot_register_duplicate_user(self):
         name = "temp"
         payload = {"nickname": name}
@@ -58,7 +56,6 @@ class TestBotUsability:
         data = response.json()
         assert data["text"] == "Buy bread"
 
-
     def test_update_task_status(self):
         name = "kurt"
         payload = {"nickname": name}
@@ -75,7 +72,6 @@ class TestBotUsability:
         assert response.status_code == 200
         data = response.json()
         assert data["done"] is True
-
 
     def test_get_tasks_for_user(self):
         name = "sam"
