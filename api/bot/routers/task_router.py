@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from application.app import TaskTrackerApp, get_app_instance
 from api.schemas.task import (
-    TaskCreateRequest, TaskUpdateStatusRequest, TaskResponse, TaskCreateByAdminRequest
+    TaskCreateRequest, TaskUpdateStatusRequest, TaskResponse
 )
 from api.schemas.user import DeleteResponse
 
@@ -26,7 +26,6 @@ async def create_task(
     """Создать задачу. Бот должен указать user_id, пользователь определяется по токену."""
     is_bot = authorization == f"Bearer {BOT_TOKEN}"
 
-    # для пользователя: в будущем — определение по токену
     #if not is_bot:
 #        raise HTTPException(status_code=403, detail="Недостаточно прав")
 
@@ -47,7 +46,6 @@ async def list_tasks(
     """Получить список задач пользователя (по user_id)."""
     is_bot = authorization == f"Bearer {BOT_TOKEN}"
 
-    # позже тут будет получение id пользователя из токена
     #if not is_bot:
 #        raise HTTPException(status_code=403, detail="Недостаточно прав")
 
@@ -99,26 +97,7 @@ async def update_task(
     return task
 
 
-@task_router.post("/user/{user_id}/task/", response_model=TaskResponse)
-async def create_task_for_user(
-    user_id: int,
-    request: TaskCreateByAdminRequest,
-    authorization: str = Header(None),
-    tracker: TaskTrackerApp = Depends(get_app_instance),
-):
-    """Бот создаёт новую задачу для пользователя (всегда со статусом done=False)."""
-    is_bot = authorization == f"Bearer {BOT_TOKEN}"
-    #if not is_bot:
-#        raise HTTPException(status_code=403, detail="Недостаточно прав")
-
-    task = await tracker.tasks.create_task(
-        user_id=user_id,
-        text=request.text,
-    )
-    return task
-
-
-@task_router.delete("task/{task_id}", response_model=DeleteResponse)
+@task_router.delete("/{task_id}", response_model=DeleteResponse)
 async def delete_task(
     task_id: int,
     authorization: str = Header(None),

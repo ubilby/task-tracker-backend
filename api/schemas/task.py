@@ -7,11 +7,6 @@ class TaskCreateRequest(BaseModel):
     text: str
 
 
-class TaskCreateByAdminRequest(BaseModel):
-    text: str = Field(..., description="Текст задачи")
-
-
-# --- Ответ API с задачей ---
 class TaskResponse(BaseModel):
     id: Optional[int]
     text: str
@@ -21,6 +16,5 @@ class TaskResponse(BaseModel):
         from_attributes = True
 
 
-# --- Обновление статуса задачи ---
 class TaskUpdateStatusRequest(BaseModel):
     done: bool

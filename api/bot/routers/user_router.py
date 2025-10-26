@@ -5,7 +5,8 @@ from fastapi import Depends, APIRouter, HTTPException, Header
 
 from application.app import TaskTrackerApp, get_app_instance
 from api.schemas.user import UserCreateRequest, UserResponse, DeleteResponse
-
+from api.schemas.task import TaskResponse
+from domain.models.user import User
 load_dotenv()
 
 BOT_TOKEN = getenv("BOT_TOKEN")
@@ -24,8 +25,7 @@ async def create_user(
     #if not is_bot:
 #        raise HTTPException(status_code=403, detail="Недостаточно прав")
 
-    user = await tracker.users.register_user(nickname=request.nickname)
-
+    user: User = await tracker.users.register_user(nickname=request.nickname)
     return user
 
 

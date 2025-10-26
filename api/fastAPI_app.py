@@ -1,8 +1,7 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-from api.routers.user_router import user_router
-from api.routers.task_router import task_router
+from api.bot.bot_router import bot_router
 
 app = FastAPI(title="TaskTracker API")
 
@@ -18,5 +17,4 @@ async def value_error_exception_handler(request, exc: ValueError):
         content={"detail": str(exc)},
     )
 
-app.include_router(user_router)
-app.include_router(task_router)
+app.include_router(bot_router)
