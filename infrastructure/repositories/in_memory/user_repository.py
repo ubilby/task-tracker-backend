@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from domain.models.user import User
 
 from domain.repositories.user_repository import UserRepository
@@ -20,17 +20,21 @@ class InMemoryUserRepository(UserRepository):
 
         return user
 
-    async def get_user(self, user_id: int) -> Optional[User]:
+    async def get_user(self, user_id: int) -> User:
         for user in self._users:
             if user.id == user_id:
 
                 return user
 
-        return None
+        # добавить свою ошибку
+        raise ValueError("Пользователь не найден")
 
-    async def exists_by_nickname(self, nickname: str) -> bool:
+    # async def exists_by_nickname(self, nickname: str) -> bool:
 
-        return any(user.nickname == nickname for user in self._users)
+    #     return any(user.nickname == nickname for user in self._users)
+
+    async def exists_by_telegram_id(self, telegram_id: int) -> bool:
+        return any(user.telegram_id == telegram_id for user in self._users)
 
     async def delete_user(self, id: int) -> bool:
         index = -1
@@ -46,3 +50,11 @@ class InMemoryUserRepository(UserRepository):
             return True
 
         return False
+
+    async def get_user_by_telegram_id(self, telegram_id: int) -> int:
+        for user in self._users:
+            if user.telegram_id == telegram_id and user.id:
+
+                return user.id
+            
+        raise Exception

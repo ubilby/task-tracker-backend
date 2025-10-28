@@ -1,10 +1,10 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import Optional
+from application.dto.dtos import TaskCreateRawData
 
 
-class TaskCreateRequest(BaseModel):
-    user_id: Optional[int]
-    text: str
+class TaskCreateRequest(TaskCreateRawData):
+    ...
 
 
 class TaskResponse(BaseModel):

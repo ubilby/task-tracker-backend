@@ -1,9 +1,11 @@
 import pytest
 import pytest_asyncio
-from typing import List, Optional
+from typing import List
 from application.app import TaskTrackerApp, get_app_instance
-from domain.models.user import User
-from domain.models.task import Task
+from domain.models import User,Task
+from application.dto.dtos import RegisterUserDTO, TaskCreateRawData
+
+ID: int = 1000000
 
 
 @pytest_asyncio.fixture(scope="class")
@@ -15,7 +17,7 @@ async def app():
 @pytest_asyncio.fixture(scope="class")
 async def test_user(app: TaskTrackerApp):
     """Создает тестового пользователя."""
-    return await app.users.register_user("test_user")
+    return await app.users.register_user(RegisterUserDTO(telegram_id=ID))
 
 
 @pytest.mark.asyncio
@@ -25,12 +27,13 @@ class TestTaskTrackerApp:
     async def test_user_registration(self, app: TaskTrackerApp, test_user: User) -> None:
         """Проверяет регистрацию нового пользователя."""
         assert isinstance(test_user.id, int)
-        assert test_user.nickname == "test_user"
+        assert test_user.telegram_id == ID
 
     async def test_create_task(self, app: TaskTrackerApp, test_user: User) -> None:
         """Проверяет создание задачи пользователем."""
         assert test_user.id
-        task: Task = await app.tasks.create_task(test_user.id, "помыть посуду")
+        task_data: TaskCreateRawData = TaskCreateRawData(user_id=test_user.id, text="помыть посуду")
+        task: Task = await app.tasks.create_task(task_data)
 
         assert isinstance(task.id, int)
         assert task.text == "помыть посуду"
@@ -40,32 +43,32 @@ class TestTaskTrackerApp:
     async def test_mark_done_and_reopen(self, app: TaskTrackerApp, test_user: User) -> None:
         """Проверяет смену статуса задачи."""
         assert test_user.id
-        task: Task = await app.tasks.create_task(test_user.id, "купить хлеб")
+        task: Task = await app.tasks.create_task(TaskCreateRawData(user_id=test_user.id, text="купить хлеб"))
         assert task.id
         await app.tasks.mark_done(task.id)
-        updated: Optional[Task] = await app.tasks.get_task(task.id)
+        updated: Task = await app.tasks.get_task(task.id)
         assert updated is not None
         assert updated.done is True
 
         await app.tasks.reopen(task.id)
-        reopened: Optional[Task] = await app.tasks.get_task(task.id)
+        reopened: Task = await app.tasks.get_task(task.id)
         assert reopened is not None
         assert reopened.done is False
 
     async def test_list_tasks_by_user(self, app: TaskTrackerApp, test_user: User) -> None:
         """Проверяет получение списка задач конкретного пользователя."""
-        user2: User = await app.users.register_user("temp")
-        user1: User = await app.users.register_user("test")
+        user2: User = await app.users.register_user(RegisterUserDTO(telegram_id=(ID + 1)))
+        user1: User = await app.users.register_user(RegisterUserDTO(telegram_id=(ID + 2)))
 
-        assert user1.id is not None
-        await app.tasks.create_task(user1.id, "купить хлеб")
-        await app.tasks.create_task(user1.id, "пропылесосить")
-        assert user2.id is not None
-        await app.tasks.create_task(user2.id, "сделать зарядку")
+        assert not (user1.id is None)
+        await app.tasks.create_task(TaskCreateRawData(user_id=user1.id, text="купить хлеб"))
+        await app.tasks.create_task(TaskCreateRawData(user_id=user1.id, text="пропылесосить"))
+        assert not (user2.id is None)
+        await app.tasks.create_task(TaskCreateRawData(user_id=user2.id, text="сделать зарядку"))
 
         tasks_user1: List[Task] = await app.tasks.list_tasks(user1.id)
         tasks_user2: List[Task] = await app.tasks.list_tasks(user2.id)
-        
+
         assert len(tasks_user1) == 2
         assert len(tasks_user2) == 1
         print(tasks_user1)
@@ -73,10 +76,10 @@ class TestTaskTrackerApp:
 
     async def test_get_nonexistent_task(self, app: TaskTrackerApp, test_user: User) -> None:
         """Проверяет получение несуществующей задачи."""
-        task: Optional[Task] = await app.tasks.get_task(999)
-        assert task is None
+        with pytest.raises(ValueError):
+            await app.tasks.get_task(999)
 
     async def test_get_nonexistent_user(self, app: TaskTrackerApp, test_user: User) -> None:
         """Проверяет получение несуществующего пользователя."""
-        user: Optional[User] = await app.users.get_user(999)
-        assert user is None
+        with pytest.raises(ValueError):
+            await app.users.get_user(999)

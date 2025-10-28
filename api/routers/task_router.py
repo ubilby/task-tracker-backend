@@ -26,13 +26,14 @@ async def create_task(
     """Создать задачу. Бот должен указать user_id, пользователь определяется по токену."""
     is_bot = authorization == f"Bearer {BOT_TOKEN}"
 
+    #получение
     #if not is_bot:
 #        raise HTTPException(status_code=403, detail="Недостаточно прав")
 
     if not hasattr(request, "user_id") or request.user_id is None:
         raise HTTPException(status_code=400, detail="user_id обязателен для бота")
 
-    task = await tracker.tasks.create_task(text=request.text, user_id=request.user_id)
+    task = await tracker.tasks.create_task(request)
 
     return task
 

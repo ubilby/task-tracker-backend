@@ -1,6 +1,7 @@
-from typing import List
+from typing import List, Dict, Any
 from domain.models.task import Task
-from services.task_service import TaskService
+from services import TaskService
+from .dto.dtos import TaskCreateRawData, CreateTaskDTO
 
 
 class TaskApp:
@@ -9,8 +10,14 @@ class TaskApp:
     def __init__(self, task_service: TaskService) -> None:
         self.task_service = task_service
 
-    async def create_task(self, user_id: int, text: str) -> Task:
-        return await self.task_service.create_task(user_id, text)
+    async def create_task(self, data: TaskCreateRawData) -> Task:
+        values: Dict[str, Any] = data.model_dump()
+        if values["user_id"] is None:
+            values["user_id"] = await self.task_service.get_user_by_telegram_id(values["telegram_id"])
+
+        dto: CreateTaskDTO = CreateTaskDTO(text=values["text"], user_id=values["user_id"])
+
+        return await self.task_service.create_task(dto)
 
     async def mark_done(self, task_id: int) -> Task:
         return await self.task_service.mark_done(task_id)
@@ -21,7 +28,7 @@ class TaskApp:
     async def list_tasks(self, user_id: int) -> List[Task]:
         return await self.task_service.list_user_tasks(user_id)
 
-    async def get_task(self, task_id: int) -> Task | None:
+    async def get_task(self, task_id: int) -> Task:
         return await self.task_service.get_task(task_id)
 
     async def delete_task(self, task_id: int) -> bool:

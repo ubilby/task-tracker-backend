@@ -1,21 +1,19 @@
 import pytest
-import uuid
 from fastapi.testclient import TestClient
 from typing import Generator
-# ИМПОРТИРУЕМ app И ЗАВИСИМОСТЬ
 from api.fastAPI_app import app
 from application.app import get_app_instance
-from application.app import TaskTrackerApp # Импортируем класс
+from application.app import TaskTrackerApp
 from api.schemas.task import TaskCreateRequest, TaskUpdateStatusRequest
 from dotenv import load_dotenv
 from os import getenv
 
 load_dotenv()
 
-# Убираем глобальный `client = TestClient(app)`
 SUPERUSER_HEADERS = {"Authorization": f"Bearer {getenv('BOT_TOKEN')}"}
 
-@pytest.fixture
+
+@pytest.fixture(scope="class")
 def client() -> Generator[TestClient]:
     """
     Главная фикстура!
@@ -46,48 +44,31 @@ def create_user(client: TestClient):
     Эта фикстура теперь зависит от `client`, который
     гарантированно использует `shared_app_instance`.
     """
-    nickname = f"TestUser_{uuid.uuid4().hex[:8]}"
-    payload = {"nickname": nickname}
+    payload = {"telegram_id":1000000}
     response = client.post("/user/", json=payload, headers=SUPERUSER_HEADERS)
     assert response.status_code == 200, response.text
     return response.json()
 
-
 def test_create_user(client: TestClient):
-    name = "Alice"
-    payload = {"nickname": name}
+    payload = {"telegram_id":100000}
     response = client.post("/user/", json=payload, headers=SUPERUSER_HEADERS)
     assert response.status_code == 200
     data = response.json()
-    assert data["nickname"] == name
-
+    assert data["id"]
 
 def test_cannot_register_duplicate_user(client: TestClient):
-    payload = {"nickname": "Bob"}
-    # Запрос 1 (в shared_app_instance)
+    payload = {"telegram_id":100000}
     response1 = client.post("/user/", json=payload, headers=SUPERUSER_HEADERS)
     assert response1.status_code == 200
-
-    # Запрос 2 (в тот же самый shared_app_instance)
     response2 = client.post("/user/", json=payload, headers=SUPERUSER_HEADERS)
-    
-    # Теперь он вернет 400, как и ожидалось!
     assert response2.status_code == 400
     assert "nickname уже занят" in response2.json()["detail"].lower()
 
-
-# Все остальные тесты теперь тоже должны принимать `client`
-# или фикстуру, которая от него зависит (как `create_user`)
-
 def test_create_task_for_user(client: TestClient, create_user):
-    user = create_user # Пользователь создан в shared_app_instance
+    user = create_user
     task_data = TaskCreateRequest(user_id=user["id"], text="Buy milk")
-    
-    # Задача создается в том же shared_app_instance
     response = client.post("/task/", json=task_data.model_dump(), headers=SUPERUSER_HEADERS)
-    
-    # Теперь будет 200 OK
-    assert response.status_code == 200 
+    assert response.status_code == 200
     data = response.json()
     assert data["text"] == "Buy milk"
     assert data["done"] is False
@@ -97,7 +78,7 @@ def test_get_task(client: TestClient, create_user):
     user = create_user
     task_data = TaskCreateRequest(user_id=user["id"], text="Buy bread")
     create_resp = client.post("/task/", json=task_data.model_dump(), headers=SUPERUSER_HEADERS)
-    task = create_resp.json() # Теперь здесь будет 200 OK и task['id']
+    task = create_resp.json()
 
     response = client.get(f"/task/{task['id']}", headers=SUPERUSER_HEADERS)
     assert response.status_code == 200
@@ -109,7 +90,7 @@ def test_update_task_status(client: TestClient, create_user):
     user = create_user
     task_data = TaskCreateRequest(user_id=user["id"], text="Buy butter")
     create_resp = client.post("/task/", json=task_data.model_dump(), headers=SUPERUSER_HEADERS)
-    task = create_resp.json() # Теперь здесь будет 200 OK и task['id']
+    task = create_resp.json() 
 
     status_data = TaskUpdateStatusRequest(done=True)
     response = client.patch(f"/task/{task['id']}", json=status_data.model_dump(), headers=SUPERUSER_HEADERS)
@@ -125,8 +106,7 @@ def test_get_tasks_for_user(client: TestClient, create_user):
     client.post("/task/", json={"text": "Task 2", "user_id": user["id"]}, headers=SUPERUSER_HEADERS)
 
     response = client.get("/task/", params={"user_id": user["id"]}, headers=SUPERUSER_HEADERS)
-    
-    # Теперь будет 200 OK
+
     assert response.status_code == 200
     data = response.json()
     titles = [t["text"] for t in data]

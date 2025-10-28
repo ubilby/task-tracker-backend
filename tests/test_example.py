@@ -1,6 +1,7 @@
 import pytest
 import asyncio
 
+
 class AsyncObject:
     async def initialize(self):
         await asyncio.sleep(0.1)  # имитация асинхронной инициализации

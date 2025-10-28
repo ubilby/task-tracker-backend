@@ -22,12 +22,19 @@ class InMemoryTaskRepository(TaskRepository):
             for i, t in enumerate(self._tasks):
                 if t.id == task.id:
                     self._tasks[i] = task
+
                     break
 
         return task
 
-    async def get_by_id(self, task_id: int) -> Optional[Task]:
-        return next((t for t in self._tasks if t.id == task_id), None)
+    async def get_by_id(self, task_id: int) -> Task:
+        task: Optional[Task] = next((t for t in self._tasks if t.id == task_id), None)
+
+        if task:
+            return task
+
+        else:
+            raise ValueError("Задача не найдена")
 
     async def list_by_user(self, user: User) -> List[Task]:
         return [t for t in self._tasks if t.creator.id == user.id]
@@ -38,6 +45,7 @@ class InMemoryTaskRepository(TaskRepository):
         for i, task in enumerate(self._tasks):
             if task.id == id:
                 index = i
+
                 break
 
         if index != -1:

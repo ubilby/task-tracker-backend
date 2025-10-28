@@ -1,8 +1,9 @@
-from typing import List, Optional
+from typing import List
 
-from domain.models.task import Task
+from domain.models import Task, User
 from domain.repositories.task_repository import TaskRepository
 from domain.repositories.user_repository import UserRepository
+from application.dto.dtos import CreateTaskDTO
 
 
 class TaskService:
@@ -10,22 +11,15 @@ class TaskService:
         self.task_repo = task_repo
         self.user_repo = user_repo
 
-    async def create_task(self, user_id: int, text: str) -> Task:
-        user = await self.user_repo.get_user(user_id)
-
-        if not user:
-            raise ValueError("Пользователь не найден")
-
-        task = Task(id=None, text=text, creator=user)
+    async def create_task(self, data: CreateTaskDTO) -> Task:
+        user_id: int = data.user_id
+        user: User = await self.user_repo.get_user(user_id)
+        task = Task(id=None, text=data.text, creator=user)
 
         return await self.task_repo.save(task)
 
     async def mark_done(self, task_id: int) -> Task:
         task = await self.task_repo.get_by_id(task_id)
-
-        if not task:
-            raise ValueError("Задача не найдена")
-
         task.mark_done()
         await self.task_repo.save(task)
 
@@ -50,8 +44,11 @@ class TaskService:
 
         return await self.task_repo.list_by_user(user)
 
-    async def get_task(self, task_id: int) -> Optional[Task]:
+    async def get_task(self, task_id: int) -> Task:
         return await self.task_repo.get_by_id(task_id)
 
     async def delete_task(self, id: int) -> bool:
         return await self.task_repo.delete_task(id)
+
+    async def get_user_by_telegram_id(self, telegram_id: int) -> int:
+        return await self.user_repo.get_user_by_telegram_id(telegram_id)

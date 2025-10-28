@@ -2,16 +2,10 @@ import pytest
 import pytest_asyncio
 from typing import List, Optional, Tuple
 
-from domain.models.user import User
-from domain.models.task import Task
-from infrastructure.repositories.in_memory.user_repository import (
-    InMemoryUserRepository
-)
-from infrastructure.repositories.in_memory.task_repository import (
-    InMemoryTaskRepository
-)
-from services.user_service import UserService
-from services.task_service import TaskService
+from domain.models import User, Task
+from infrastructure.repositories.in_memory import InMemoryUserRepository, InMemoryTaskRepository
+from services import UserService, TaskService
+from application.dto.dtos import CreateTaskDTO
 
 
 @pytest_asyncio.fixture
@@ -36,13 +30,13 @@ class TestTaskAndUserServices:
         """Проверяет регистрацию пользователя и уникальность никнейма."""
         user_service, _ = services
 
-        user: User = await user_service.register_user("alex")
+        user: User = await user_service.register_user(telegram_id=1000000)
         assert user.id is not None
-        assert user.nickname == "alex"
+        assert user.telegram_id == 1000000
 
         # повторный никнейм — ошибка
         with pytest.raises(ValueError):
-            await user_service.register_user("alex")
+            await user_service.register_user(1000000)
 
     @pytest.mark.asyncio
     async def test_add_task_and_change_status(
@@ -51,13 +45,13 @@ class TestTaskAndUserServices:
     ) -> None:
         """Проверяет создание задачи и изменение её статуса."""
         user_service, task_service = services
-        user: User = await user_service.register_user("bob")
+        user: User = await user_service.register_user(telegram_id=1000000)
         assert user.id is not None
         # создаём задачу
-        task: Optional[Task] = await task_service.create_task(
+        task: Optional[Task] = await task_service.create_task(CreateTaskDTO(
             user_id=user.id,
             text="Сходить в магазин"
-        )
+        ))
         assert isinstance(task.id, int)
         assert task.done is False
         assert task.text == "Сходить в магазин"
@@ -83,15 +77,15 @@ class TestTaskAndUserServices:
     ) -> None:
         """Проверяет получение списка задач по пользователю."""
         user_service, task_service = services
-        user1: User = await user_service.register_user("he")
-        user2: User = await user_service.register_user("she")
+        user1: User = await user_service.register_user(telegram_id=1000002)
+        user2: User = await user_service.register_user(telegram_id=1000003)
 
         # создаём задачи
         assert user1.id is not None
-        await task_service.create_task(user1.id, "купить хлеб")
-        await task_service.create_task(user1.id, "помыть посуду")
+        await task_service.create_task(CreateTaskDTO(user_id=user1.id, text="купить хлеб"))
+        await task_service.create_task(CreateTaskDTO(user_id=user1.id, text="помыть посуду"))
         assert user2.id is not None
-        await task_service.create_task(user2.id, "сделать зарядку")
+        await task_service.create_task(CreateTaskDTO(user_id=user2.id, text="сделать зарядку"))
 
         tasks_user1: List[Task] = await task_service.list_user_tasks(user1.id)
         tasks_user2: List[Task] = await task_service.list_user_tasks(user2.id)

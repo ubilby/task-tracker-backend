@@ -31,7 +31,9 @@ class TaskTrackerApp:
 
 
 # task_tracker = TaskTrackerApp()
+# async def get_app_instance() -> TaskTrackerApp:
 
+#     return task_tracker
 
 async def get_app_instance() -> TaskTrackerApp:
 

@@ -1,13 +1,13 @@
 from pydantic import BaseModel
+from application.dto.dtos import RegisterUserDTO
 
 
-class UserCreateRequest(BaseModel):
-    nickname: str
+class UserCreateRequest(RegisterUserDTO):
+    ...
 
 
 class UserResponse(BaseModel):
     id: int
-    nickname: str
 
     class ConfigDict:
         from_attributes = True
