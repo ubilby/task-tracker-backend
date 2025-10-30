@@ -4,7 +4,6 @@ from typing import List, Optional
 from dotenv import load_dotenv
 from fastapi import Depends, APIRouter, Header, HTTPException
 
-
 from application.app import get_app_instance, TaskTrackerApp
 from api.schemas.user import DeleteResponse
 from api.schemas.task import TaskCreateRequest, TaskResponse, TaskUpdateStatusRequest
@@ -25,7 +24,6 @@ async def create_task(
 ):
     """Создать задачу. Бот должен указать user_id, пользователь определяется по токену."""
     is_bot = authorization == f"Bearer {BOT_TOKEN}"
-
     #получение
     #if not is_bot:
 #        raise HTTPException(status_code=403, detail="Недостаточно прав")
@@ -54,6 +52,7 @@ async def list_tasks(
         raise HTTPException(status_code=400, detail="user_id обязателен")
 
     tasks = await tracker.tasks.list_tasks(user_id)
+
     return tasks
 
 
@@ -70,6 +69,7 @@ async def get_task(
 #        raise HTTPException(status_code=403, detail="Недостаточно прав")
 
     task = await tracker.tasks.get_task(task_id)
+
     return task
 
 

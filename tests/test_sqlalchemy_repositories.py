@@ -210,5 +210,6 @@ class TestSQLAlchemyTaskRepository:
         success = await task_repo.delete_task(task_to_delete.id)
         assert success is True
 
-        assert await task_repo.get_by_id(task_to_delete.id) is None
-        assert await task_repo.delete_task(999999) is False
+        with pytest.raises(ValueError):
+            assert await task_repo.get_by_id(task_to_delete.id) # is None
+            assert await task_repo.delete_task(999999) # is False

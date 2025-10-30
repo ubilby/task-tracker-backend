@@ -9,6 +9,7 @@ class UserCreateRequest(RegisterUserDTO):
 
 class UserResponse(BaseModel):
     id: int
+    telegram_id: int
 
     class ConfigDict:
         from_attributes = True

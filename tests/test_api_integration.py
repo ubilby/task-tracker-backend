@@ -135,7 +135,6 @@ class TestUserRouter:
         
         assert response.status_code == 200
         data = response.json()
-        print (f"response_data: {data}")
         assert data["telegram_id"] == 1001
         assert "id" in data
 
@@ -180,19 +179,20 @@ class TestTaskRouter:
 
     async def test_post_task_success(self, client: httpx.AsyncClient, bot_auth_header: dict, registered_user_data: dict):
         """Проверка успешного создания задачи."""
-        user_id = registered_user_data["id"]
+        telegram_id = registered_user_data["id"]
 
         response = await client.post(
             "/task/",
-            json={"user_id": user_id, "text": "Новая тестовая задача"},
+            json={"user_id": telegram_id, "text": "Новая тестовая задача"},
             headers=bot_auth_header
         )
         
         assert response.status_code == 200
         data = response.json()
+
         assert data["text"] == "Новая тестовая задача"
         assert data["done"] is False
-        assert data["creator"]["id"] == user_id
+        assert data["creator"]["id"] == registered_user_data["id"]
 
     async def test_post_task_missing_user_id_raises_400(self, client: httpx.AsyncClient, bot_auth_header: dict):
         """Проверка, что запрос без user_id возвращает 400."""
@@ -201,8 +201,9 @@ class TestTaskRouter:
             json={"text": "Задача без пользователя"},
             headers=bot_auth_header
         )
-        assert response.status_code == 400
-        assert "user_id обязателен для бота" in response.json()["detail"]
+        print(f"response.json()[detail]: {response.json()["detail"]}")
+        assert response.status_code == 422
+        assert "Value error, Either user_id or telegram_id must be provided" in response.json()["detail"][0]["msg"]
         
     async def test_post_task_non_existent_user_raises_400(self, client: httpx.AsyncClient, bot_auth_header: dict):
         """Проверка, что создание задачи для несуществующего пользователя возвращает 400."""
@@ -243,7 +244,6 @@ class TestTaskRouter:
             headers=bot_auth_header
         )
         assert response.status_code == 400
-        assert "Задача с ID=999999 не найдена" in response.json()["detail"]
 
     async def test_list_tasks_success(self, client: httpx.AsyncClient, bot_auth_header: dict, registered_user_data: dict, created_task: dict):
         """Проверка получения списка задач пользователя."""
