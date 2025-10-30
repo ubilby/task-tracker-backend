@@ -1,5 +1,5 @@
-from domain.repositories.user_repository import UserRepository
 from domain.models.user import User
+from domain.repositories.user_repository import UserRepository
 
 
 class UserService:
@@ -8,7 +8,7 @@ class UserService:
 
     async def register_user(self, telegram_id: int) -> User:
         if await self.user_repo.exists_by_telegram_id(telegram_id):
-            raise ValueError("Nickname уже занят")
+            raise ValueError("уже зарегестрирован")
 
         user = User(id=None, telegram_id=telegram_id)
 

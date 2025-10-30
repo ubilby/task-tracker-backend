@@ -1,14 +1,14 @@
-from fastapi import Depends, APIRouter, HTTPException, Header
+from os import getenv
 from typing import List, Optional
 
-from application.app import TaskTrackerApp, get_app_instance
-from api.schemas.task import (
-    TaskCreateRequest, TaskUpdateStatusRequest, TaskResponse
-)
-from api.schemas.user import DeleteResponse
-
 from dotenv import load_dotenv
-from os import getenv
+from fastapi import Depends, APIRouter, Header, HTTPException
+
+
+from application.app import get_app_instance, TaskTrackerApp
+from api.schemas.user import DeleteResponse
+from api.schemas.task import TaskCreateRequest, TaskResponse, TaskUpdateStatusRequest
+
 
 load_dotenv()
 

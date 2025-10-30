@@ -1,5 +1,6 @@
 from pydantic import BaseModel
-from application.dto.dtos import RegisterUserDTO
+
+from domain.dto.dtos import RegisterUserDTO
 
 
 class UserCreateRequest(RegisterUserDTO):

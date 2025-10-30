@@ -1,4 +1,5 @@
-from typing import Protocol, List
+from typing import List, Protocol
+
 from domain.models.task import Task
 from domain.models.user import User
 

@@ -1,6 +1,6 @@
+from domain.dto.dtos import RegisterUserDTO
 from domain.models.user import User
 from services.user_service import UserService
-from .dto.dtos import RegisterUserDTO
 
 
 class UserApp:

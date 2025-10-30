@@ -1,9 +1,9 @@
 from typing import List
 
+from domain.dto.dtos import CreateTaskDTO
 from domain.models import Task, User
 from domain.repositories.task_repository import TaskRepository
 from domain.repositories.user_repository import UserRepository
-from application.dto.dtos import CreateTaskDTO
 
 
 class TaskService:

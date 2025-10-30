@@ -1,11 +1,13 @@
 from dotenv import load_dotenv
 from os import getenv
 
-from fastapi import Depends, APIRouter, HTTPException, Header
+from fastapi import APIRouter, Depends, Header, HTTPException
 
 from application.app import TaskTrackerApp, get_app_instance
-from api.schemas.user import UserCreateRequest, UserResponse, DeleteResponse
+from api.schemas.user import DeleteResponse, UserCreateRequest, UserResponse
 from domain.models.user import User
+
+
 load_dotenv()
 
 BOT_TOKEN = getenv("BOT_TOKEN")

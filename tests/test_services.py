@@ -1,95 +1,181 @@
+from os import getenv, path
+from sys import path as syspath
+syspath.insert(0, path.abspath(path.join(path.dirname(__file__), '..')))
+
+from typing import AsyncGenerator
+
 import pytest
 import pytest_asyncio
-from typing import List, Optional, Tuple
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from domain.models import User, Task
-from infrastructure.repositories.in_memory import InMemoryUserRepository, InMemoryTaskRepository
-from services import UserService, TaskService
-from application.dto.dtos import CreateTaskDTO
+from domain.models.user import User
+from domain.models.task import Task
+from domain.dto.dtos import CreateTaskDTO
+from infrastructure.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
+from infrastructure.repositories.sqlalchemy.task_repository import SQLAlchemyTaskRepository
+from infrastructure.db.database import engine
+from services.user_service import UserService
+from services.task_service import TaskService
 
 
-@pytest_asyncio.fixture
-async def services() -> Tuple[UserService, TaskService]:
-    """Создаёт in-memory реализации репозиториев и сервисов."""
-    user_repo = InMemoryUserRepository()
-    task_repo = InMemoryTaskRepository()
-    user_service = UserService(user_repo)
-    task_service = TaskService(task_repo, user_repo)
-    return user_service, task_service
+@pytest.fixture
+def user_repo_real(db_session: AsyncSession) -> SQLAlchemyUserRepository:
+    """Фикстура, предоставляющая реальный SQLAlchemyUserRepository."""
+    return SQLAlchemyUserRepository(db_session)
+
+
+@pytest.fixture
+def task_repo_real(db_session: AsyncSession) -> SQLAlchemyTaskRepository:
+    """Фикстура, предоставляющая реальный SQLAlchemyTaskRepository."""
+    return SQLAlchemyTaskRepository(db_session)
+
+
+@pytest.fixture
+def user_service_integration(user_repo_real: SQLAlchemyUserRepository) -> UserService:
+    """Фикстура, предоставляющая UserService с реальным репозиторием."""
+    return UserService(user_repo_real)
+
+
+@pytest.fixture
+def task_service_integration(
+    task_repo_real: SQLAlchemyTaskRepository, 
+    user_repo_real: SQLAlchemyUserRepository
+) -> TaskService:
+    """Фикстура, предоставляющая TaskService с реальными репозиториями."""
+    return TaskService(task_repo_real, user_repo_real)
+
+
+@pytest_asyncio.fixture(scope="function")
+async def db_session() -> AsyncGenerator[AsyncSession, None]:
+    """
+    Предоставляет асинхронную сессию для каждого теста.
+    Каждый тест выполняется в транзакции, которая откатывается (rollback) после завершения,
+    обеспечивая изоляцию.
+    """
+    # 1. Используем engine.connect(), чтобы получить "чистое" соединение без неявной транзакции.
+    async with engine.connect() as connection:
+        # 2. Теперь явно начинаем корневую транзакцию для теста.
+        # Это предотвращает InvalidRequestError.
+        transaction = await connection.begin()
+        
+        # 3. Создаем асинхронную сессию, привязанную к этому соединению/транзакции.
+        async_session = AsyncSession(
+            bind=connection, expire_on_commit=False, autoflush=False
+        )
+        
+        # 4. В SQLAlchemy 2.0+ сессия, привязанная к активной транзакции, не требует 
+        # дополнительного вызова async_session.begin().
+
+        yield async_session
+
+        # 5. Очистка: закрываем сессию и откатываем транзакцию, чтобы отменить все изменения.
+        # transaction.rollback() откатывает транзакцию, начатую на connection.begin().
+        await async_session.close()
+        await transaction.rollback()
+
+
+# --- Тесты ---
+
+@pytest.mark.asyncio
+class TestUserServiceIntegration:
+    """Интеграционные тесты для UserService с реальным DB репозиторием."""
+
+    async def test_register_and_get_user(self, user_service_integration: UserService):
+        """Проверяет регистрацию через сервис и последующее получение."""
+        telegram_id = 1234567
+
+        # 1. Вызов бизнес-логики (регистрация)
+        new_user = await user_service_integration.register_user(telegram_id)
+
+        assert new_user.id is not None
+        assert new_user.telegram_id == telegram_id
+
+        # 2. Проверяем получение пользователя по ID (второй вызов сервиса)
+        fetched_user = await user_service_integration.get_user(new_user.id)
+        assert fetched_user.telegram_id == telegram_id
+        
+        # 3. Проверяем, что дубликат вызывает ошибку
+        with pytest.raises(ValueError, match="уже зарегестрирован"):
+            await user_service_integration.register_user(telegram_id)
+
+    async def test_get_non_existent_user_raises_error(self, user_service_integration: UserService):
+        """Проверяет, что сервис корректно обрабатывает ошибку 'не найдено'."""
+        with pytest.raises(ValueError, match="Пользователь не найден"):
+            await user_service_integration.get_user(999)
 
 
 @pytest.mark.asyncio
-class TestTaskAndUserServices:
-    """Интеграционные тесты для сервисов пользователя и задач."""
+class TestTaskServiceIntegration:
+    """Интеграционные тесты для TaskService с реальными DB репозиториями."""
 
-    @pytest.mark.asyncio
-    async def test_add_user_and_check_nickname(
-        self,
-        services: Tuple[UserService, TaskService]
-    ) -> None:
-        """Проверяет регистрацию пользователя и уникальность никнейма."""
-        user_service, _ = services
+    @pytest_asyncio.fixture
+    async def registered_user(self, user_service_integration: UserService) -> User:
+        """Создает и сохраняет пользователя, необходимого для тестов задач."""
+        # Используем сервис для создания пользователя
+        return await user_service_integration.register_user(telegram_id=9876543)
 
-        user: User = await user_service.register_user(telegram_id=1000000)
-        assert user.id is not None
-        assert user.telegram_id == 1000000
+    async def test_create_task(self, task_service_integration: TaskService, registered_user: User):
+        """Проверяет создание задачи через сервис."""
+        assert registered_user.id is not None
+        dto = CreateTaskDTO(user_id=registered_user.id, text="Купить молоко")
+        
+        task = await task_service_integration.create_task(dto)
 
-        # повторный никнейм — ошибка
+        assert task.id is not None
+        assert task.text == "Купить молоко"
+        assert task.creator.id == registered_user.id
+
+    async def test_create_task_for_non_existent_user(self, task_service_integration: TaskService):
+        """Проверяет, что сервис не дает создать задачу для несуществующего пользователя."""
+        dto = CreateTaskDTO(user_id=999, text="Задача в никуда")
+        
+        with pytest.raises(ValueError, match="Пользователь не найден"):
+            await task_service_integration.create_task(dto)
+
+    async def test_mark_done_and_list_tasks(self, task_service_integration: TaskService, registered_user: User):
+        """Проверяет создание, отметку как выполненной и получение списка задач."""
+        assert registered_user.id is not None
+        
+        dto_1 = CreateTaskDTO(user_id=registered_user.id, text="Завершить отчет")
+        dto_2 = CreateTaskDTO(user_id=registered_user.id, text="Позвонить клиенту")
+        
+        task_1 = await task_service_integration.create_task(dto_1)
+        task_2 = await task_service_integration.create_task(dto_2)
+        
+        assert task_1.id is not None
+        updated_task_1 = await task_service_integration.mark_done(task_1.id)
+        
+        assert updated_task_1.done is True
+        assert task_2.done is False
+        
+        tasks = await task_service_integration.list_user_tasks(registered_user.id)
+        
+        assert len(tasks) == 2
+        done_task = next(t for t in tasks if t.id == task_1.id)
+        assert done_task.done is True
+        
+    async def test_delete_task(self, task_service_integration: TaskService, registered_user: User):
+        """Проверяет создание и удаление задачи через сервис."""
+        assert registered_user.id is not None
+        dto = CreateTaskDTO(user_id=registered_user.id, text="Удалить тестовый файл")
+        task_to_delete = await task_service_integration.create_task(dto)
+        task_id = task_to_delete.id
+        assert task_id is not None
+
+        success = await task_service_integration.delete_task(task_id)
+        assert success is True
+        
+        # Проверяем, что при попытке получить ее, возникнет ошибка
         with pytest.raises(ValueError):
-            await user_service.register_user(1000000)
+            await task_service_integration.get_task(task_id)
 
-    @pytest.mark.asyncio
-    async def test_add_task_and_change_status(
-        self,
-        services: Tuple[UserService, TaskService]
-    ) -> None:
-        """Проверяет создание задачи и изменение её статуса."""
-        user_service, task_service = services
-        user: User = await user_service.register_user(telegram_id=1000000)
-        assert user.id is not None
-        # создаём задачу
-        task: Optional[Task] = await task_service.create_task(CreateTaskDTO(
-            user_id=user.id,
-            text="Сходить в магазин"
-        ))
-        assert isinstance(task.id, int)
-        assert task.done is False
-        assert task.text == "Сходить в магазин"
-
-        # выполняем задачу
-        await task_service.mark_done(task.id)
-        assert task.id is not None
-        task = await task_service.get_task(task.id)
-        assert task is not None
-        assert task.done is True
-
-        # возвращаем обратно
-        assert task.id is not None
-        await task_service.reopen(task.id)
-        task = await task_service.get_task(task.id)
-        assert task is not None
-        assert task.done is False
-
-    @pytest.mark.asyncio
-    async def test_list_tasks_by_user(
-        self,
-        services: Tuple[UserService, TaskService]
-    ) -> None:
-        """Проверяет получение списка задач по пользователю."""
-        user_service, task_service = services
-        user1: User = await user_service.register_user(telegram_id=1000002)
-        user2: User = await user_service.register_user(telegram_id=1000003)
-
-        # создаём задачи
-        assert user1.id is not None
-        await task_service.create_task(CreateTaskDTO(user_id=user1.id, text="купить хлеб"))
-        await task_service.create_task(CreateTaskDTO(user_id=user1.id, text="помыть посуду"))
-        assert user2.id is not None
-        await task_service.create_task(CreateTaskDTO(user_id=user2.id, text="сделать зарядку"))
-
-        tasks_user1: List[Task] = await task_service.list_user_tasks(user1.id)
-        tasks_user2: List[Task] = await task_service.list_user_tasks(user2.id)
-
-        assert len(tasks_user1) == 2
-        assert len(tasks_user2) == 1
-        assert all(t.creator.id == user1.id for t in tasks_user1)
+    async def test_operation_on_non_existent_task_raises_error(self, task_service_integration: TaskService):
+        """Проверяет, что операции над несуществующей задачей вызывают ошибку."""
+        with pytest.raises(ValueError):
+            await task_service_integration.delete_task(99999)
+            
+        with pytest.raises(ValueError):
+            await task_service_integration.mark_done(999999)
+            
+        with pytest.raises(ValueError):
+            await task_service_integration.reopen(99999)

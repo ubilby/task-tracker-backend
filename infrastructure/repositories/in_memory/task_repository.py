@@ -1,6 +1,7 @@
 from typing import List, Optional
-from domain.models.task import Task
+
 from domain.models.user import User
+from domain.models.task import Task
 from domain.repositories.task_repository import TaskRepository
 
 tasks: List[Task] = []

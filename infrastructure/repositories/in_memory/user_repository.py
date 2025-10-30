@@ -1,6 +1,6 @@
 from typing import List
-from domain.models.user import User
 
+from domain.models.user import User
 from domain.repositories.user_repository import UserRepository
 
 users: List[User] = []

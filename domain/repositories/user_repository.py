@@ -1,4 +1,5 @@
 from typing import Protocol
+
 from domain.models.user import User
 
 

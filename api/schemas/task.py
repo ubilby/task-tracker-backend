@@ -1,6 +1,8 @@
-from pydantic import BaseModel
 from typing import Optional
-from application.dto.dtos import TaskCreateRawData
+
+from pydantic import BaseModel
+
+from domain.dto.dtos import TaskCreateRawData
 
 
 class TaskCreateRequest(TaskCreateRawData):

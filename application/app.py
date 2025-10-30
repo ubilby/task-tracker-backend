@@ -1,15 +1,9 @@
-from typing import Optional
-from domain.repositories import UserRepository, TaskRepository
-from infrastructure.repositories.in_memory.user_repository import (
-    InMemoryUserRepository
-)
-from infrastructure.repositories.in_memory.task_repository import (
-    InMemoryTaskRepository
-)
-from services.user_service import UserService
+from fastapi import Depends
+
+from application import TaskApp, UserApp
+from .dependencies import get_task_service, get_user_service
 from services.task_service import TaskService
-from application.user_app import UserApp
-from application.task_app import TaskApp
+from services.user_service import UserService
 
 
 class TaskTrackerApp:
@@ -17,24 +11,16 @@ class TaskTrackerApp:
 
     def __init__(
         self,
-        user_repo: Optional[UserRepository] = None,
-        task_repo: Optional[TaskRepository] = None
+        user_service: UserService, 
+        task_service: TaskService
     ):
-        user_repo = user_repo or InMemoryUserRepository()
-        task_repo = task_repo or InMemoryTaskRepository()
-
-        user_service = UserService(user_repo)
-        task_service = TaskService(task_repo, user_repo)
-
         self.users = UserApp(user_service)
         self.tasks = TaskApp(task_service)
 
 
-# task_tracker = TaskTrackerApp()
-# async def get_app_instance() -> TaskTrackerApp:
+async def get_app_instance(
+    user_service: UserService = Depends(get_user_service),
+    task_service: TaskService = Depends(get_task_service)
+) -> TaskTrackerApp:
 
-#     return task_tracker
-
-async def get_app_instance() -> TaskTrackerApp:
-
-    return TaskTrackerApp()
+    return TaskTrackerApp(user_service=user_service, task_service=task_service)
