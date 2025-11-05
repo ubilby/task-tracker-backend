@@ -1,6 +1,7 @@
 from user.service import User, UserService
 from user.dto import RegisterUserDTO
 
+
 class UserApp:
     """Application layer для работы с пользователями."""
 

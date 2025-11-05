@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from task.dto import TaskCreateRawData
 from user.domain.model import User
 
+
 class TaskCreateRequest(TaskCreateRawData):
     ...
 

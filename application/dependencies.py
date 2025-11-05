@@ -30,25 +30,22 @@ def get_user_service(user_repo: UserRepository = Depends(get_user_repo)) -> User
 # 4. Зависимость для TaskService (внедряет оба репозитория)
 def get_task_service(
     task_repo: TaskRepository = Depends(get_task_repo),
-    user_repo: UserRepository = Depends(get_user_repo)
+    user_repo: UserRepository = Depends(get_user_repo),
 ) -> TaskService:
     return TaskService(task_repo, user_repo)
+
 
 class TaskTrackerApp:
     """Фасад верхнего уровня, объединяющий все части приложения."""
 
-    def __init__(
-        self,
-        user_service: UserService, 
-        task_service: TaskService
-    ):
+    def __init__(self, user_service: UserService, task_service: TaskService):
         self.users = UserApp(user_service)
         self.tasks = TaskApp(task_service)
 
 
 async def get_app_instance(
     user_service: UserService = Depends(get_user_service),
-    task_service: TaskService = Depends(get_task_service)
+    task_service: TaskService = Depends(get_task_service),
 ) -> TaskTrackerApp:
 
     return TaskTrackerApp(user_service=user_service, task_service=task_service)
@@ -59,6 +56,7 @@ load_dotenv()
 BOT_TOKEN = getenv("BOT_TOKEN")
 api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
 
+
 async def verify_bot_token(authorization: str = Security(api_key_header)):
     """
     Зависимость (dependency), которая проверяет, что
@@ -66,6 +64,5 @@ async def verify_bot_token(authorization: str = Security(api_key_header)):
     """
     if authorization != f"Bearer {BOT_TOKEN}":
         raise HTTPException(
-            status_code=403, 
-            detail="Недостаточно прав (неверный токен бота)"
+            status_code=403, detail="Недостаточно прав (неверный токен бота)"
         )

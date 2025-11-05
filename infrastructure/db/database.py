@@ -4,7 +4,7 @@ from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 
-DB_TYPE = getenv("DB_TYPE", "sqlite") # "sqlite" или "postgres"
+DB_TYPE = getenv("DB_TYPE", "sqlite")  # "sqlite" или "postgres"
 
 SQLITE_DB_URL = "sqlite+aiosqlite:///./task_tracker.db"
 
@@ -16,15 +16,14 @@ else:
     DATABASE_URL = SQLITE_DB_URL
 
 # 1. Создаем асинхронный "движок"
-engine = create_async_engine(DATABASE_URL, echo=True) # echo=True для логгирования SQL
+engine = create_async_engine(DATABASE_URL, echo=True)  # echo=True для логгирования SQL
 
 # 2. Создаем "фабрику" сессий
 # expire_on_commit=False важно для асинхронного кода
 AsyncSessionFactory = async_sessionmaker(
-    engine, 
-    expire_on_commit=False, 
-    class_=AsyncSession
+    engine, expire_on_commit=False, class_=AsyncSession
 )
+
 
 # 4. Зависимость (dependency) для FastAPI
 async def get_session() -> AsyncGenerator[AsyncSession, None]:

@@ -6,12 +6,14 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
+
 # Импорт для работы с асинхронным движком SQLAlchemy
-from sqlalchemy.ext.asyncio import create_async_engine 
+from sqlalchemy.ext.asyncio import create_async_engine
 
 # Импорт для запуска асинхронных функций в синхронном контексте Alembic
 # Используем 'run' из модуля 'asyncio'
 from asyncio import run as asyncio_run
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
@@ -37,15 +39,20 @@ target_metadata = None
 
 # Импортируем вашу модель Base
 import os, sys
-sys.path.append(os.getcwd()) # Добавляем корневую директорию в путь
 
-from infrastructure.db.models import Base # <--- Ваш импорт Base
+sys.path.append(os.getcwd())  # Добавляем корневую директорию в путь
+
+from infrastructure.db.models import Base  # <--- Ваш импорт Base
+
 # from infrastructure.db.database import engine # <--- Необязательно, если не хотите использовать engine из того файла
 
 # ...
-target_metadata = Base.metadata # Убедитесь, что эта строка указывает на metadata вашей Base
+target_metadata = (
+    Base.metadata
+)  # Убедитесь, что эта строка указывает на metadata вашей Base
 
 # ...
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -100,7 +107,7 @@ def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
     # 1. Получаем URL
     url = config.get_main_option("sqlalchemy.url")
-    
+
     # 2. 🟢 Проверка и Уточнение Типа (REQUIRED FIX)
     if url is None:
         raise Exception("Database URL not found in alembic.ini")

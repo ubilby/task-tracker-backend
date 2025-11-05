@@ -1,6 +1,7 @@
 from os import getenv, path
 from sys import path as syspath
-syspath.insert(0, path.abspath(path.join(path.dirname(__file__), '..')))
+
+syspath.insert(0, path.abspath(path.join(path.dirname(__file__), "..")))
 
 from typing import AsyncGenerator
 
@@ -33,34 +34,34 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
     async with engine.connect() as connection:
         # 2. Начинаем корневую транзакцию (для фиксации/отката всех изменений)
         async with connection.begin():
-            
+
             # 3. Создаем сессию, привязанную к соединению
             async_session = AsyncSession(
                 bind=connection, expire_on_commit=False, autoflush=False
             )
-            
+
             # 4. Начинаем вложенную транзакцию (это savepoint)
             # Вложенная транзакция откатывается автоматически при закрытии сессии.
             async with async_session.begin():
                 yield async_session
-                
+
             # 5. Откатываем корневую транзакцию после теста
             # Откат корневой транзакции гарантирует, что все изменения отменены.
             # Если тест успешно завершил свою работу (yield), мы явно откатываем
             # чтобы избежать фиксации данных.
-            await connection.rollback() # <-- Явный rollback корневой транзакции
-            
+            await connection.rollback()  # <-- Явный rollback корневой транзакции
+
             # 6. Закрываем сессию
             await async_session.close()
 
 
-@pytest_asyncio.fixture # <-- Использован pytest_asyncio.fixture
+@pytest_asyncio.fixture  # <-- Использован pytest_asyncio.fixture
 async def user_repo(db_session: AsyncSession) -> SQLAlchemyUserRepository:
     """Фикстура для UserRepository."""
     return SQLAlchemyUserRepository(db_session)
 
 
-@pytest_asyncio.fixture # <-- Использован pytest_asyncio.fixture
+@pytest_asyncio.fixture  # <-- Использован pytest_asyncio.fixture
 async def task_repo(db_session: AsyncSession) -> SQLAlchemyTaskRepository:
     """Фикстура для TaskRepository."""
     return SQLAlchemyTaskRepository(db_session)
@@ -77,9 +78,9 @@ class TestSQLAlchemyUserRepository:
         """Проверяет сохранение нового пользователя и генерацию ID."""
         telegram_id = 90001
         new_user = User(id=None, telegram_id=telegram_id)
-        
+
         saved_user = await user_repo.save(new_user)
-        
+
         assert saved_user.id is not None
         assert saved_user.telegram_id == telegram_id
         # Проверяем, что пользователь действительно в базе
@@ -92,15 +93,17 @@ class TestSQLAlchemyUserRepository:
             user = await user_repo.get_user(999999)
             assert user is None
 
-    async def test_duplicate_telegram_id_raises_error(self, user_repo: SQLAlchemyUserRepository):
+    async def test_duplicate_telegram_id_raises_error(
+        self, user_repo: SQLAlchemyUserRepository
+    ):
         """Проверяет ограничение уникальности telegram_id."""
         telegram_id = 90002
         await user_repo.save(User(id=None, telegram_id=telegram_id))
-        
+
         # Попытка сохранить второго пользователя с тем же telegram_id
         with pytest.raises(IntegrityError):
             await user_repo.save(User(id=None, telegram_id=telegram_id))
-    
+
     async def test_exists_by_telegram_id(self, user_repo: SQLAlchemyUserRepository):
         """Проверяет метод exists_by_telegram_id."""
         telegram_id = 90003
@@ -116,15 +119,17 @@ class TestSQLAlchemyUserRepository:
         # Удаляем
         success = await user_repo.delete_user(user_to_delete.id)
         assert success is True
-        
+
         # Проверяем, что он действительно удален
         with pytest.raises(ValueError):
-            user = await user_repo.get_user(user_to_delete.id)
-        
+            await user_repo.get_user(user_to_delete.id)
+
         # # Проверяем удаление несуществующего
         assert not (await user_repo.delete_user(9999991))
 
-    async def test_get_user_id_by_telegram_id(self, user_repo: SQLAlchemyUserRepository):
+    async def test_get_user_id_by_telegram_id(
+        self, user_repo: SQLAlchemyUserRepository
+    ):
         """Проверяет получение внутреннего ID по Telegram ID."""
         telegram_id = 90005
         user = await user_repo.save(User(id=None, telegram_id=telegram_id))
@@ -144,7 +149,9 @@ class TestSQLAlchemyTaskRepository:
         """Создает и возвращает тестового пользователя для задач."""
         return await user_repo.save(User(id=None, telegram_id=88888))
 
-    async def test_save_new_task(self, task_repo: SQLAlchemyTaskRepository, setup_user: User):
+    async def test_save_new_task(
+        self, task_repo: SQLAlchemyTaskRepository, setup_user: User
+    ):
         """Проверяет создание и сохранение новой задачи."""
         new_task = Task(id=None, text="Купить молоко", creator=setup_user)
         saved_task = await task_repo.save(new_task)
@@ -158,18 +165,24 @@ class TestSQLAlchemyTaskRepository:
         fetched_task = await task_repo.get_by_id(saved_task.id)
         assert fetched_task
         assert fetched_task.id == saved_task.id
-        assert fetched_task.creator.telegram_id == setup_user.telegram_id # Проверка маппинга связи
+        assert (
+            fetched_task.creator.telegram_id == setup_user.telegram_id
+        )  # Проверка маппинга связи
 
-    async def test_update_task_status(self, task_repo: SQLAlchemyTaskRepository, setup_user: User):
+    async def test_update_task_status(
+        self, task_repo: SQLAlchemyTaskRepository, setup_user: User
+    ):
         """Проверяет обновление статуса задачи."""
-        task = await task_repo.save(Task(id=None, text="Позвонить маме", creator=setup_user))
-        
+        task = await task_repo.save(
+            Task(id=None, text="Позвонить маме", creator=setup_user)
+        )
+
         # Отмечаем как выполненную
         task.mark_done()
         updated_task = await task_repo.save(task)
-        
+
         assert updated_task.done is True
-        
+
         # Проверяем в базе
         assert task.id
         fetched_task = await task_repo.get_by_id(task.id)
@@ -177,10 +190,10 @@ class TestSQLAlchemyTaskRepository:
         assert fetched_task.done is True
 
     async def test_list_tasks_by_user(
-        self, 
-        task_repo: SQLAlchemyTaskRepository, 
-        user_repo: SQLAlchemyUserRepository, 
-        setup_user: User
+        self,
+        task_repo: SQLAlchemyTaskRepository,
+        user_repo: SQLAlchemyUserRepository,
+        setup_user: User,
     ):
         """Проверяет получение списка задач для пользователя."""
         user2 = await user_repo.save(User(id=None, telegram_id=88889))
@@ -199,13 +212,17 @@ class TestSQLAlchemyTaskRepository:
         assert tasks_user1[0].text == "Задача 1"
         assert tasks_user1[1].text == "Задача 2"
 
-    async def test_delete_task(self, task_repo: SQLAlchemyTaskRepository, setup_user: User):
+    async def test_delete_task(
+        self, task_repo: SQLAlchemyTaskRepository, setup_user: User
+    ):
         """Проверяет удаление задачи."""
-        task_to_delete: Task = await task_repo.save(Task(id=None, text="Удалить меня", creator=setup_user))
+        task_to_delete: Task = await task_repo.save(
+            Task(id=None, text="Удалить меня", creator=setup_user)
+        )
         assert task_to_delete.id
         success = await task_repo.delete_task(task_to_delete.id)
         assert success is True
 
         with pytest.raises(ValueError):
-            assert await task_repo.get_by_id(task_to_delete.id) # is None
-            assert await task_repo.delete_task(999999) # is False
+            assert await task_repo.get_by_id(task_to_delete.id)  # is None
+            assert await task_repo.delete_task(999999)  # is False

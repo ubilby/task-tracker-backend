@@ -2,7 +2,7 @@ from os import getenv
 from typing import List, Optional
 
 from dotenv import load_dotenv
-from fastapi import Depends, APIRouter, Security, HTTPException
+from fastapi import Depends, APIRouter, HTTPException
 from fastapi.security import APIKeyHeader
 
 from application.dependencies import get_app_instance, TaskTrackerApp, verify_bot_token
@@ -13,9 +13,7 @@ from task.api.schema import TaskCreateRequest, TaskResponse, TaskUpdateStatusReq
 load_dotenv()
 
 task_router = APIRouter(
-    prefix="/task",
-    tags=["tasks"],
-    dependencies=[Depends(verify_bot_token)]    
+    prefix="/task", tags=["tasks"], dependencies=[Depends(verify_bot_token)]
 )
 
 BOT_TOKEN = getenv("BOT_TOKEN")
@@ -24,8 +22,7 @@ api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
 
 @task_router.post("/", response_model=TaskResponse)
 async def create_task(
-    request: TaskCreateRequest,
-    tracker: TaskTrackerApp = Depends(get_app_instance)
+    request: TaskCreateRequest, tracker: TaskTrackerApp = Depends(get_app_instance)
 ):
     """Создать задачу. Бот должен указать user_id, пользователь определяется по токену."""
 
@@ -36,8 +33,7 @@ async def create_task(
 
 @task_router.get("/", response_model=List[TaskResponse])
 async def list_tasks(
-    user_id: Optional[int] = None,
-    tracker: TaskTrackerApp = Depends(get_app_instance)
+    user_id: Optional[int] = None, tracker: TaskTrackerApp = Depends(get_app_instance)
 ):
     """Получить список задач пользователя (по user_id)."""
 
@@ -50,10 +46,7 @@ async def list_tasks(
 
 
 @task_router.get("/{task_id}", response_model=TaskResponse)
-async def get_task(
-    task_id: int,
-    tracker: TaskTrackerApp = Depends(get_app_instance)
-):
+async def get_task(task_id: int, tracker: TaskTrackerApp = Depends(get_app_instance)):
     """Получить одну задачу по ID."""
 
     task = await tracker.tasks.get_task(task_id)
@@ -65,7 +58,7 @@ async def get_task(
 async def update_task(
     task_id: int,
     request: TaskUpdateStatusRequest,
-    tracker: TaskTrackerApp = Depends(get_app_instance)
+    tracker: TaskTrackerApp = Depends(get_app_instance),
 ):
     """Изменить статус (или в будущем текст) задачи."""
 

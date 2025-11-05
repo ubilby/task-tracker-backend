@@ -11,7 +11,7 @@ from infrastructure.db.models import DBTask
 
 
 class SQLAlchemyTaskRepository(TaskRepository):
-    
+
     def __init__(self, session: AsyncSession):
         self.session = session
 
@@ -20,31 +20,23 @@ class SQLAlchemyTaskRepository(TaskRepository):
         if db_task.creator is None:
             # Этого не должно случиться, если ORM правильно загрузил данные
             raise UserNotFoundError("У задачи нет создателя")
-            
+
         domain_user = User(
-            id=db_task.creator.id,
-            telegram_id=db_task.creator.telegram_id
+            id=db_task.creator.id, telegram_id=db_task.creator.telegram_id
         )
 
         return Task(
-            id=db_task.id,
-            text=db_task.text,
-            done=db_task.done,
-            creator=domain_user
+            id=db_task.id, text=db_task.text, done=db_task.done, creator=domain_user
         )
 
     async def save(self, task: Task) -> Task:
         """Сохраняет или обновляет задачу."""
         if task.id is None:
-            db_task = DBTask(
-                text=task.text,
-                done=task.done,
-                user_id=task.creator.id
-            )
+            db_task = DBTask(text=task.text, done=task.done, user_id=task.creator.id)
             self.session.add(db_task)
             await self.session.flush()
             await self.session.refresh(db_task)
-            task.id = db_task.id # Обновляем доменную модель новым ID
+            task.id = db_task.id  # Обновляем доменную модель новым ID
 
         else:
             # Обновление существующей задачи (изменение текста/статуса)
@@ -52,7 +44,7 @@ class SQLAlchemyTaskRepository(TaskRepository):
             if db_task:
                 db_task.text = task.text
                 db_task.done = task.done
-        
+
         # Получаем полную доменную модель, чтобы вернуть актуальный объект
         response = await self.get_by_id(task.id)
 
@@ -62,10 +54,16 @@ class SQLAlchemyTaskRepository(TaskRepository):
 
         raise TaskNotFoundError
 
-    async def get_by_id(self, task_id: int) -> Optional[Task]: # Изменен тип возврата на Optional
+    async def get_by_id(
+        self, task_id: int
+    ) -> Optional[Task]:  # Изменен тип возврата на Optional
         """Получает задачу по ID."""
         # Загружаем DBTask вместе с создателем
-        stmt = select(DBTask).where(DBTask.id == task_id).options(joinedload(DBTask.creator))
+        stmt = (
+            select(DBTask)
+            .where(DBTask.id == task_id)
+            .options(joinedload(DBTask.creator))
+        )
         result = await self.session.execute(stmt)
         db_task = result.scalars().first()
 
@@ -80,12 +78,14 @@ class SQLAlchemyTaskRepository(TaskRepository):
         stmt = (
             select(DBTask)
             .where(DBTask.user_id == user.id)
-            .options(joinedload(DBTask.creator)) # JOIN для получения данных о создателе
+            .options(
+                joinedload(DBTask.creator)
+            )  # JOIN для получения данных о создателе
         )
-        
+
         result = await self.session.execute(stmt)
         db_tasks = result.scalars().all()
-        
+
         return [self._db_to_domain_task(db_task) for db_task in db_tasks]
 
     async def delete_task(self, id: int) -> bool:
@@ -95,7 +95,7 @@ class SQLAlchemyTaskRepository(TaskRepository):
         if db_task:
             await self.session.delete(db_task)
             await self.session.flush()
-            
+
             return True
-        
+
         raise TaskNotFoundError

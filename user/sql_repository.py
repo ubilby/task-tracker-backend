@@ -8,7 +8,7 @@ from user.domain.repository import User, UserRepository
 
 class SQLAlchemyUserRepository(UserRepository):
     """Реализация репозитория пользователя через SQLAlchemy."""
-    
+
     def __init__(self, session: AsyncSession):
         self.session = session
 
@@ -26,21 +26,18 @@ class SQLAlchemyUserRepository(UserRepository):
             db_user = await self.session.get(DBUser, user.id)
             if db_user:
                 # В текущей модели обновлять нечего, но commit всё равно нужен для целостности
-                pass 
-        
+                pass
+
         return user
 
     async def get_user(self, user_id: int) -> User:
         """Получает пользователя по внутреннему ID."""
         db_user = await self.session.get(DBUser, user_id)
-        
+
         if db_user is None:
             raise UserNotFoundError("Пользователь не найден")
-                    
-        return User(
-            id=db_user.id,
-            telegram_id=db_user.telegram_id
-        )
+
+        return User(id=db_user.id, telegram_id=db_user.telegram_id)
 
     async def exists_by_telegram_id(self, telegram_id: int) -> bool:
         """Проверяет существование пользователя по telegram_id."""

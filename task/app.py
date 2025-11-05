@@ -1,7 +1,7 @@
-from typing import Any, Dict, List
+from typing import List
 
 from task.domain.model import Task
-from task.dto import CreateTaskDTO, TaskCreateRawData
+from task.dto import TaskCreateRawData
 from task.service import TaskService
 
 

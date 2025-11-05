@@ -1,5 +1,3 @@
-from fastapi.responses import JSONResponse
-
 from exceptions import UserNotFoundError, TaskNotFoundError
 from fastapi.responses import JSONResponse
 
@@ -18,6 +16,7 @@ async def user_not_found_exception_handler(request, exc: UserNotFoundError):
         status_code=404,
         content={"detail": str(exc)},
     )
+
 
 async def task_not_found_exception_handler(request, exc: TaskNotFoundError):
     """Преобразует TaskNotFoundError в HTTP 404 Not Found."""

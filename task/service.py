@@ -5,6 +5,7 @@ from user.domain.repository import UserRepository
 from task.dto import TaskCreateRawData
 from exceptions import TaskNotFoundError, UserNotFoundError
 
+
 class TaskService:
     def __init__(self, task_repo: TaskRepository, user_repo: UserRepository):
         self.task_repo = task_repo
@@ -16,7 +17,7 @@ class TaskService:
 
         elif data.telegram_id:
             user_id = await self.user_repo.get_user_by_telegram_id(data.telegram_id)
-        
+
         user: User = await self.user_repo.get_user(user_id)
         task = Task(id=None, text=data.text, creator=user)
 
