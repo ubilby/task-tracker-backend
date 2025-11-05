@@ -1,9 +1,10 @@
 from dotenv import load_dotenv
 from os import getenv
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Security
+from fastapi.security import APIKeyHeader
 
-from application.app import TaskTrackerApp, get_app_instance
+from application.dependencies import TaskTrackerApp, get_app_instance, verify_bot_token
 from user.api.schema import DeleteResponse, UserCreateRequest, UserResponse
 from user.domain.model import User
 
@@ -11,20 +12,21 @@ from user.domain.model import User
 load_dotenv()
 
 BOT_TOKEN = getenv("BOT_TOKEN")
+api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
 
-user_router = APIRouter(prefix="/user", tags=["users"])
+user_router = APIRouter(
+    prefix="/user",
+    tags=["users"],
+    dependencies=[Depends(verify_bot_token)]    
+
+)
 
 
 @user_router.post("/", response_model=UserResponse)
 async def create_user(
     request: UserCreateRequest,
-    authorization: str = Header(None),
     tracker: TaskTrackerApp = Depends(get_app_instance)
 ):
-    is_bot = authorization == f"Bearer {BOT_TOKEN}"
-    # there will some authorization logic
-    #if not is_bot:
-#        raise HTTPException(status_code=403, detail="Недостаточно прав")
     user: User = await tracker.users.register_user(request)
     return user
 
@@ -32,14 +34,9 @@ async def create_user(
 @user_router.delete("/{user_id}", response_model=DeleteResponse)
 async def delete_user(
     user_id: int,
-    authorization: str = Header(None),
     tracker: TaskTrackerApp = Depends(get_app_instance),
 ):
     """Удаление пользователя (только для бота/админа)"""
-    is_bot = authorization == f"Bearer {BOT_TOKEN}"
-    #if not is_bot:
-#        raise HTTPException(status_code=403, detail="Недостаточно прав")
-
     success = await tracker.users.delete_user(user_id)
 
     return DeleteResponse(success=success)

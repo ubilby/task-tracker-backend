@@ -2,34 +2,32 @@ from os import getenv
 from typing import List, Optional
 
 from dotenv import load_dotenv
-from fastapi import Depends, APIRouter, Header, HTTPException
+from fastapi import Depends, APIRouter, Security, HTTPException
+from fastapi.security import APIKeyHeader
 
-from application.app import get_app_instance, TaskTrackerApp
+from application.dependencies import get_app_instance, TaskTrackerApp, verify_bot_token
 from user.api.schema import DeleteResponse
 from task.api.schema import TaskCreateRequest, TaskResponse, TaskUpdateStatusRequest
 
 
 load_dotenv()
 
-task_router = APIRouter(prefix="/task", tags=["tasks"])
+task_router = APIRouter(
+    prefix="/task",
+    tags=["tasks"],
+    dependencies=[Depends(verify_bot_token)]    
+)
 
 BOT_TOKEN = getenv("BOT_TOKEN")
+api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
 
 
 @task_router.post("/", response_model=TaskResponse)
 async def create_task(
     request: TaskCreateRequest,
-    authorization: str = Header(None),
     tracker: TaskTrackerApp = Depends(get_app_instance)
 ):
     """Создать задачу. Бот должен указать user_id, пользователь определяется по токену."""
-    is_bot = authorization == f"Bearer {BOT_TOKEN}"
-    #получение
-    #if not is_bot:
-#        raise HTTPException(status_code=403, detail="Недостаточно прав")
-
-    if not hasattr(request, "telegram_id") or request.telegram_id is None:
-        raise HTTPException(status_code=400, detail="telegram_id обязателен для бота")
 
     task = await tracker.tasks.create_task(request)
 
@@ -39,14 +37,9 @@ async def create_task(
 @task_router.get("/", response_model=List[TaskResponse])
 async def list_tasks(
     user_id: Optional[int] = None,
-    authorization: str = Header(None),
     tracker: TaskTrackerApp = Depends(get_app_instance)
 ):
     """Получить список задач пользователя (по user_id)."""
-    is_bot = authorization == f"Bearer {BOT_TOKEN}"
-
-    #if not is_bot:
-#        raise HTTPException(status_code=403, detail="Недостаточно прав")
 
     if user_id is None:
         raise HTTPException(status_code=400, detail="user_id обязателен")
@@ -59,14 +52,9 @@ async def list_tasks(
 @task_router.get("/{task_id}", response_model=TaskResponse)
 async def get_task(
     task_id: int,
-    authorization: str = Header(None),
     tracker: TaskTrackerApp = Depends(get_app_instance)
 ):
     """Получить одну задачу по ID."""
-    is_bot = authorization == f"Bearer {BOT_TOKEN}"
-
-    #if not is_bot:
-#        raise HTTPException(status_code=403, detail="Недостаточно прав")
 
     task = await tracker.tasks.get_task(task_id)
 
@@ -77,18 +65,9 @@ async def get_task(
 async def update_task(
     task_id: int,
     request: TaskUpdateStatusRequest,
-    authorization: str = Header(None),
     tracker: TaskTrackerApp = Depends(get_app_instance)
 ):
     """Изменить статус (или в будущем текст) задачи."""
-    is_bot = authorization == f"Bearer {BOT_TOKEN}"
-    #if not is_bot:
-#        raise HTTPException(status_code=403, detail="Недостаточно прав")
-
-    task = await tracker.tasks.get_task(task_id)
-
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
 
     if request.done:
         task = await tracker.tasks.mark_done(task_id)
@@ -101,13 +80,8 @@ async def update_task(
 @task_router.delete("/{task_id}", response_model=DeleteResponse)
 async def delete_task(
     task_id: int,
-    authorization: str = Header(None),
     tracker: TaskTrackerApp = Depends(get_app_instance),
 ):
-    is_bot = authorization == f"Bearer {BOT_TOKEN}"
-    #if not is_bot:
-#        raise HTTPException(status_code=403, detail="Недостаточно прав")
-
     success = await tracker.tasks.delete_task(task_id)
 
     return DeleteResponse(success=success)

@@ -1,11 +1,16 @@
-from fastapi import Depends
+from os import getenv
+
+from dotenv import load_dotenv
+from fastapi import Depends, Security, HTTPException
+from fastapi.security import APIKeyHeader
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from infrastructure.db.database import get_session
 from task.sql_repository import SQLAlchemyTaskRepository, TaskRepository
 from user.sql_repository import SQLAlchemyUserRepository, UserRepository
-from .app import UserService, UserApp
-from .app import TaskService, TaskApp
+from user.app import UserService, UserApp
+from task.app import TaskService, TaskApp
+
 
 # 1. Зависимость для UserRepository (скрывает сложность SQLAlchemy)
 def get_user_repo(session: AsyncSession = Depends(get_session)) -> UserRepository:
@@ -48,3 +53,19 @@ async def get_app_instance(
 
     return TaskTrackerApp(user_service=user_service, task_service=task_service)
 
+
+load_dotenv()
+
+BOT_TOKEN = getenv("BOT_TOKEN")
+api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
+
+async def verify_bot_token(authorization: str = Security(api_key_header)):
+    """
+    Зависимость (dependency), которая проверяет, что
+    запрос пришел от авторизованного бота.
+    """
+    if authorization != f"Bearer {BOT_TOKEN}":
+        raise HTTPException(
+            status_code=403, 
+            detail="Недостаточно прав (неверный токен бота)"
+        )

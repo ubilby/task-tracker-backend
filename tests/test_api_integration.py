@@ -11,10 +11,8 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 
-
-from application.app import TaskTrackerApp
 from main import app
-from application.app import get_app_instance
+from application.dependencies import get_app_instance, TaskTrackerApp
 from infrastructure.db.database import engine
 from user.sql_repository import SQLAlchemyUserRepository
 from task.sql_repository import SQLAlchemyTaskRepository
