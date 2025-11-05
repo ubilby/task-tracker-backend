@@ -27,7 +27,6 @@ class SQLAlchemyUserRepository(UserRepository):
                 # В текущей модели обновлять нечего, но commit всё равно нужен для целостности
                 pass 
         
-        await self.session.commit() # <-- ДОБАВЛЕН COMMIT
         return user
 
     async def get_user(self, user_id: int) -> User:
@@ -67,7 +66,6 @@ class SQLAlchemyUserRepository(UserRepository):
         if db_user:
             await self.session.delete(db_user)
             await self.session.flush()
-            await self.session.commit() # <-- ДОБАВЛЕН COMMIT
             return True
 
         return False

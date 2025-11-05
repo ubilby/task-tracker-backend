@@ -205,7 +205,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
-task_tracker.dbtask_tracker.db
+
+task_tracker.db
 alembic.ini
 alembic/README
 script.py.mako

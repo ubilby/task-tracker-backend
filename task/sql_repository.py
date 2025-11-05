@@ -51,8 +51,6 @@ class SQLAlchemyTaskRepository(TaskRepository):
                 db_task.text = task.text
                 db_task.done = task.done
         
-        await self.session.commit() # <-- ДОБАВЛЕН COMMIT
-        
         # Получаем полную доменную модель, чтобы вернуть актуальный объект
         response = await self.get_by_id(task.id)
 
@@ -95,7 +93,6 @@ class SQLAlchemyTaskRepository(TaskRepository):
         if db_task:
             await self.session.delete(db_task)
             await self.session.flush()
-            await self.session.commit() # <-- ДОБАВЛЕН COMMIT
             
             return True
         
