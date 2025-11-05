@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from exceptions import UserNotFoundError
 from infrastructure.db.models import DBUser
 from user.domain.repository import User, UserRepository
 
@@ -34,7 +35,7 @@ class SQLAlchemyUserRepository(UserRepository):
         db_user = await self.session.get(DBUser, user_id)
         
         if db_user is None:
-            raise ValueError("Пользователь не найден")
+            raise UserNotFoundError("Пользователь не найден")
                     
         return User(
             id=db_user.id,
@@ -55,7 +56,7 @@ class SQLAlchemyUserRepository(UserRepository):
         user_id = result.scalar_one_or_none()
 
         if user_id is None:
-            raise ValueError("Пользователь по telegram_id не найден")
+            raise UserNotFoundError("Пользователь по telegram_id не найден")
 
         return user_id
 

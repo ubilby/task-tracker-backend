@@ -4,9 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
+from exceptions import TaskNotFoundError, UserNotFoundError
 from task.domain.model import Task, User
 from task.domain.repository import TaskRepository
 from infrastructure.db.models import DBTask
+
 
 class SQLAlchemyTaskRepository(TaskRepository):
     
@@ -17,7 +19,7 @@ class SQLAlchemyTaskRepository(TaskRepository):
         """Хелпер-транслятор для задачи."""
         if db_task.creator is None:
             # Этого не должно случиться, если ORM правильно загрузил данные
-            raise ValueError("У задачи нет создателя")
+            raise UserNotFoundError("У задачи нет создателя")
             
         domain_user = User(
             id=db_task.creator.id,
@@ -58,7 +60,7 @@ class SQLAlchemyTaskRepository(TaskRepository):
 
             return response
 
-        raise ValueError
+        raise TaskNotFoundError
 
     async def get_by_id(self, task_id: int) -> Optional[Task]: # Изменен тип возврата на Optional
         """Получает задачу по ID."""
@@ -71,7 +73,7 @@ class SQLAlchemyTaskRepository(TaskRepository):
 
             return self._db_to_domain_task(db_task)
 
-        raise ValueError
+        raise TaskNotFoundError
 
     async def list_by_user(self, user: User) -> List[Task]:
         """Получает список задач для конкретного пользователя."""
@@ -96,4 +98,4 @@ class SQLAlchemyTaskRepository(TaskRepository):
             
             return True
         
-        raise ValueError
+        raise TaskNotFoundError

@@ -3,7 +3,7 @@ from typing import List
 from task.domain.repository import Task, User, TaskRepository
 from user.domain.repository import UserRepository
 from task.dto import CreateTaskDTO
-
+from exceptions import TaskNotFoundError, UserNotFoundError
 
 class TaskService:
     def __init__(self, task_repo: TaskRepository, user_repo: UserRepository):
@@ -28,7 +28,7 @@ class TaskService:
         task = await self.task_repo.get_by_id(task_id)
 
         if not task:
-            raise ValueError("Задача не найдена")
+            raise TaskNotFoundError("Задача не найдена")
 
         task.reopen()
         await self.task_repo.save(task)
@@ -39,7 +39,7 @@ class TaskService:
         user = await self.user_repo.get_user(user_id)
 
         if not user:
-            raise ValueError("Пользователь не найден")
+            raise UserNotFoundError("Пользователь не найден")
 
         return await self.task_repo.list_by_user(user)
 

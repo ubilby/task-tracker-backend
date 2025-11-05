@@ -1,0 +1,6 @@
+class UserNotFoundError(ValueError):
+    ...
+
+
+class TaskNotFoundError(ValueError):
+    ...
