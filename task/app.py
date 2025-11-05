@@ -12,13 +12,7 @@ class TaskApp:
         self.task_service = task_service
 
     async def create_task(self, data: TaskCreateRawData) -> Task:
-        values: Dict[str, Any] = data.model_dump()
-        if values["user_id"] is None:
-            values["user_id"] = await self.task_service.get_user_by_telegram_id(values["telegram_id"])
-
-        dto: CreateTaskDTO = CreateTaskDTO(text=values["text"], user_id=values["user_id"])
-
-        return await self.task_service.create_task(dto)
+        return await self.task_service.create_task(data)
 
     async def mark_done(self, task_id: int) -> Task:
         return await self.task_service.mark_done(task_id)

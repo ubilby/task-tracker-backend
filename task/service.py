@@ -2,7 +2,7 @@ from typing import List
 
 from task.domain.repository import Task, User, TaskRepository
 from user.domain.repository import UserRepository
-from task.dto import CreateTaskDTO
+from task.dto import TaskCreateRawData
 from exceptions import TaskNotFoundError, UserNotFoundError
 
 class TaskService:
@@ -10,8 +10,13 @@ class TaskService:
         self.task_repo = task_repo
         self.user_repo = user_repo
 
-    async def create_task(self, data: CreateTaskDTO) -> Task:
-        user_id: int = data.user_id
+    async def create_task(self, data: TaskCreateRawData) -> Task:
+        if data.user_id:
+            user_id = data.user_id
+
+        elif data.telegram_id:
+            user_id = await self.user_repo.get_user_by_telegram_id(data.telegram_id)
+        
         user: User = await self.user_repo.get_user(user_id)
         task = Task(id=None, text=data.text, creator=user)
 

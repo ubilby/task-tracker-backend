@@ -9,7 +9,7 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from task.domain.model import Task, User
-from task.dto import CreateTaskDTO
+from task.dto import TaskCreateRawData
 from user.sql_repository import SQLAlchemyUserRepository
 from task.sql_repository import SQLAlchemyTaskRepository
 from infrastructure.db.database import engine
@@ -47,31 +47,31 @@ def task_service_integration(
 @pytest_asyncio.fixture(scope="function")
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """
-    Предоставляет асинхронную сессию для каждого теста.
-    Каждый тест выполняется в транзакции, которая откатывается (rollback) после завершения,
-    обеспечивая изоляцию.
+    Предоставляет асинхронную сессию для каждого теста, используя savepoint.
     """
-    # 1. Используем engine.connect(), чтобы получить "чистое" соединение без неявной транзакции.
+    # 1. Получаем соединение
     async with engine.connect() as connection:
-        # 2. Теперь явно начинаем корневую транзакцию для теста.
-        # Это предотвращает InvalidRequestError.
-        transaction = await connection.begin()
-        
-        # 3. Создаем асинхронную сессию, привязанную к этому соединению/транзакции.
-        async_session = AsyncSession(
-            bind=connection, expire_on_commit=False, autoflush=False
-        )
-        
-        # 4. В SQLAlchemy 2.0+ сессия, привязанная к активной транзакции, не требует 
-        # дополнительного вызова async_session.begin().
-
-        yield async_session
-
-        # 5. Очистка: закрываем сессию и откатываем транзакцию, чтобы отменить все изменения.
-        # transaction.rollback() откатывает транзакцию, начатую на connection.begin().
-        await async_session.close()
-        await transaction.rollback()
-
+        # 2. Начинаем корневую транзакцию (для фиксации/отката всех изменений)
+        async with connection.begin():
+            
+            # 3. Создаем сессию, привязанную к соединению
+            async_session = AsyncSession(
+                bind=connection, expire_on_commit=False, autoflush=False
+            )
+            
+            # 4. Начинаем вложенную транзакцию (это savepoint)
+            # Вложенная транзакция откатывается автоматически при закрытии сессии.
+            async with async_session.begin():
+                yield async_session
+                
+            # 5. Откатываем корневую транзакцию после теста
+            # Откат корневой транзакции гарантирует, что все изменения отменены.
+            # Если тест успешно завершил свою работу (yield), мы явно откатываем
+            # чтобы избежать фиксации данных.
+            await connection.rollback() # <-- Явный rollback корневой транзакции
+            
+            # 6. Закрываем сессию
+            await async_session.close()
 
 # --- Тесты ---
 
@@ -116,7 +116,7 @@ class TestTaskServiceIntegration:
     async def test_create_task(self, task_service_integration: TaskService, registered_user: User):
         """Проверяет создание задачи через сервис."""
         assert registered_user.id is not None
-        dto = CreateTaskDTO(user_id=registered_user.id, text="Купить молоко")
+        dto = TaskCreateRawData(user_id=registered_user.id, text="Купить молоко")
         
         task = await task_service_integration.create_task(dto)
 
@@ -126,7 +126,7 @@ class TestTaskServiceIntegration:
 
     async def test_create_task_for_non_existent_user(self, task_service_integration: TaskService):
         """Проверяет, что сервис не дает создать задачу для несуществующего пользователя."""
-        dto = CreateTaskDTO(user_id=999, text="Задача в никуда")
+        dto = TaskCreateRawData(user_id=999, text="Задача в никуда")
         
         with pytest.raises(ValueError, match="Пользователь не найден"):
             await task_service_integration.create_task(dto)
@@ -135,8 +135,8 @@ class TestTaskServiceIntegration:
         """Проверяет создание, отметку как выполненной и получение списка задач."""
         assert registered_user.id is not None
         
-        dto_1 = CreateTaskDTO(user_id=registered_user.id, text="Завершить отчет")
-        dto_2 = CreateTaskDTO(user_id=registered_user.id, text="Позвонить клиенту")
+        dto_1 = TaskCreateRawData(user_id=registered_user.id, text="Завершить отчет")
+        dto_2 = TaskCreateRawData(user_id=registered_user.id, text="Позвонить клиенту")
         
         task_1 = await task_service_integration.create_task(dto_1)
         task_2 = await task_service_integration.create_task(dto_2)
@@ -156,7 +156,7 @@ class TestTaskServiceIntegration:
     async def test_delete_task(self, task_service_integration: TaskService, registered_user: User):
         """Проверяет создание и удаление задачи через сервис."""
         assert registered_user.id is not None
-        dto = CreateTaskDTO(user_id=registered_user.id, text="Удалить тестовый файл")
+        dto = TaskCreateRawData(user_id=registered_user.id, text="Удалить тестовый файл")
         task_to_delete = await task_service_integration.create_task(dto)
         task_id = task_to_delete.id
         assert task_id is not None

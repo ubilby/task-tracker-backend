@@ -27,33 +27,31 @@ async def setup_db():
 @pytest_asyncio.fixture(scope="function")
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """
-    Предоставляет асинхронную сессию для каждого теста.
-    Каждый тест выполняется в транзакции, которая откатывается (rollback) после завершения,
-    обеспечивая изоляцию.
-    
-    ИСПРАВЛЕНИЕ: Заменено engine.begin() на engine.connect(), чтобы избежать
-    конфликта из-за двойного вызова begin().
+    Предоставляет асинхронную сессию для каждого теста, используя savepoint.
     """
-    # 1. Используем engine.connect(), чтобы получить "чистое" соединение без неявной транзакции.
+    # 1. Получаем соединение
     async with engine.connect() as connection:
-        # 2. Теперь явно начинаем корневую транзакцию для теста.
-        # Это предотвращает InvalidRequestError.
-        transaction = await connection.begin()
-        
-        # 3. Создаем асинхронную сессию, привязанную к этому соединению/транзакции.
-        async_session = AsyncSession(
-            bind=connection, expire_on_commit=False, autoflush=False
-        )
-        
-        # 4. В SQLAlchemy 2.0+ сессия, привязанная к активной транзакции, не требует 
-        # дополнительного вызова async_session.begin().
-
-        yield async_session
-
-        # 5. Очистка: закрываем сессию и откатываем транзакцию, чтобы отменить все изменения.
-        # transaction.rollback() откатывает транзакцию, начатую на connection.begin().
-        await async_session.close()
-        await transaction.rollback()
+        # 2. Начинаем корневую транзакцию (для фиксации/отката всех изменений)
+        async with connection.begin():
+            
+            # 3. Создаем сессию, привязанную к соединению
+            async_session = AsyncSession(
+                bind=connection, expire_on_commit=False, autoflush=False
+            )
+            
+            # 4. Начинаем вложенную транзакцию (это savepoint)
+            # Вложенная транзакция откатывается автоматически при закрытии сессии.
+            async with async_session.begin():
+                yield async_session
+                
+            # 5. Откатываем корневую транзакцию после теста
+            # Откат корневой транзакции гарантирует, что все изменения отменены.
+            # Если тест успешно завершил свою работу (yield), мы явно откатываем
+            # чтобы избежать фиксации данных.
+            await connection.rollback() # <-- Явный rollback корневой транзакции
+            
+            # 6. Закрываем сессию
+            await async_session.close()
 
 
 @pytest_asyncio.fixture # <-- Использован pytest_asyncio.fixture

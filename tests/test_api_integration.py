@@ -23,8 +23,7 @@ from task.service import TaskService
 
 load_dotenv()
 
-# Устанавливаем mock-токен бота для тестирования
-TEST_BOT_TOKEN  = {"Authorization": f"Bearer {getenv('BOT_TOKEN')}"}
+TEST_BOT_TOKEN  = getenv('BOT_TOKEN')
 
 # --- 2. Фикстуры для тестовой среды ---
 
@@ -86,39 +85,38 @@ async def registered_user_data(client: httpx.AsyncClient, bot_auth_header: dict)
         headers=bot_auth_header
     )
     assert response.status_code == 200
+    print(f"fixture registered_user_data: {response.json()}")
     return response.json()
 
 
 @pytest_asyncio.fixture(scope="function")
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """
-    Предоставляет асинхронную сессию для каждого теста.
-    Каждый тест выполняется в транзакции, которая откатывается (rollback) после завершения,
-    обеспечивая изоляцию.
-    
-    ИСПРАВЛЕНИЕ: Заменено engine.begin() на engine.connect(), чтобы избежать
-    конфликта из-за двойного вызова begin().
+    Предоставляет асинхронную сессию для каждого теста, используя savepoint.
     """
-    # 1. Используем engine.connect(), чтобы получить "чистое" соединение без неявной транзакции.
+    # 1. Получаем соединение
     async with engine.connect() as connection:
-        # 2. Теперь явно начинаем корневую транзакцию для теста.
-        # Это предотвращает InvalidRequestError.
-        transaction = await connection.begin()
-        
-        # 3. Создаем асинхронную сессию, привязанную к этому соединению/транзакции.
-        async_session = AsyncSession(
-            bind=connection, expire_on_commit=False, autoflush=False
-        )
-        
-        # 4. В SQLAlchemy 2.0+ сессия, привязанная к активной транзакции, не требует 
-        # дополнительного вызова async_session.begin().
-
-        yield async_session
-
-        # 5. Очистка: закрываем сессию и откатываем транзакцию, чтобы отменить все изменения.
-        # transaction.rollback() откатывает транзакцию, начатую на connection.begin().
-        await async_session.close()
-        await transaction.rollback()
+        # 2. Начинаем корневую транзакцию (для фиксации/отката всех изменений)
+        async with connection.begin():
+            
+            # 3. Создаем сессию, привязанную к соединению
+            async_session = AsyncSession(
+                bind=connection, expire_on_commit=False, autoflush=False
+            )
+            
+            # 4. Начинаем вложенную транзакцию (это savepoint)
+            # Вложенная транзакция откатывается автоматически при закрытии сессии.
+            async with async_session.begin():
+                yield async_session
+                
+            # 5. Откатываем корневую транзакцию после теста
+            # Откат корневой транзакции гарантирует, что все изменения отменены.
+            # Если тест успешно завершил свою работу (yield), мы явно откатываем
+            # чтобы избежать фиксации данных.
+            await connection.rollback() # <-- Явный rollback корневой транзакции
+            
+            # 6. Закрываем сессию
+            await async_session.close()
 
 # --- 3. Тесты API для Роутера Пользователей ---
 
@@ -179,14 +177,14 @@ class TestTaskRouter:
 
     async def test_post_task_success(self, client: httpx.AsyncClient, bot_auth_header: dict, registered_user_data: dict):
         """Проверка успешного создания задачи."""
-        telegram_id = registered_user_data["id"]
+        telegram_id = registered_user_data["telegram_id"]
 
         response = await client.post(
             "/task/",
-            json={"user_id": telegram_id, "text": "Новая тестовая задача"},
+            json={"telegram_id": telegram_id, "text": "Новая тестовая задача"},
             headers=bot_auth_header
         )
-        
+
         assert response.status_code == 200
         data = response.json()
 
@@ -209,18 +207,19 @@ class TestTaskRouter:
         """Проверка, что создание задачи для несуществующего пользователя возвращает 400."""
         response = await client.post(
             "/task/",
-            json={"user_id": 999999, "text": "Задача для несуществующего"},
+            json={"telegram_id": 999999, "text": "Задача для несуществующего"},
             headers=bot_auth_header
         )
-        assert response.status_code == 400
-        assert "Пользователь не найден" in response.json()["detail"]
+        assert response.status_code == 404
+        print(f'response.json()["detail"]s {response.json()["detail"]}')
+        assert "Пользователь по telegram_id не найден" in response.json()["detail"]
 
     @pytest_asyncio.fixture
     async def created_task(self, client: httpx.AsyncClient, bot_auth_header: dict, registered_user_data: dict) -> dict:
         """Создает и возвращает тестовую задачу."""
         response = await client.post(
             "/task/",
-            json={"user_id": registered_user_data["id"], "text": "Задача для изменения"},
+            json={"telegram_id": registered_user_data["telegram_id"], "text": "Задача для изменения"},
             headers=bot_auth_header
         )
         return response.json()
@@ -243,7 +242,7 @@ class TestTaskRouter:
             "/task/999999",
             headers=bot_auth_header
         )
-        assert response.status_code == 400
+        assert response.status_code == 404
 
     async def test_list_tasks_success(self, client: httpx.AsyncClient, bot_auth_header: dict, registered_user_data: dict, created_task: dict):
         """Проверка получения списка задач пользователя."""
@@ -307,4 +306,4 @@ class TestTaskRouter:
 
         # Проверяем, что задача не найдена после удаления
         response = await client.get(f"/task/{task_id}", headers=bot_auth_header)
-        assert response.status_code == 400 # Возвращает 400 из-за ValueError: Задача не найдена
+        assert response.status_code == 404
