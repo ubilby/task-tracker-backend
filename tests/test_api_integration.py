@@ -13,13 +13,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 
 from application.app import TaskTrackerApp
-from api.fastAPI_app import app
+from main import app
 from application.app import get_app_instance
 from infrastructure.db.database import engine
-from infrastructure.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
-from infrastructure.repositories.sqlalchemy.task_repository import SQLAlchemyTaskRepository
-from services.user_service import UserService
-from services.task_service import TaskService
+from user.sql_repository import SQLAlchemyUserRepository
+from task.sql_repository import SQLAlchemyTaskRepository
+from user.service import UserService
+from task.service import TaskService
 
 load_dotenv()
 

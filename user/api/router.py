@@ -4,8 +4,8 @@ from os import getenv
 from fastapi import APIRouter, Depends, Header, HTTPException
 
 from application.app import TaskTrackerApp, get_app_instance
-from api.schemas.user import DeleteResponse, UserCreateRequest, UserResponse
-from domain.models.user import User
+from user.api.schema import DeleteResponse, UserCreateRequest, UserResponse
+from user.domain.model import User
 
 
 load_dotenv()

@@ -1,7 +1,6 @@
 from typing import List, Protocol
 
-from domain.models.task import Task
-from domain.models.user import User
+from task.domain.model import Task, User
 
 
 class TaskRepository(Protocol):

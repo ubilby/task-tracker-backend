@@ -1,7 +1,5 @@
-from domain.dto.dtos import RegisterUserDTO
-from domain.models.user import User
-from services.user_service import UserService
-
+from user.service import User, UserService
+from user.dto import RegisterUserDTO
 
 class UserApp:
     """Application layer для работы с пользователями."""

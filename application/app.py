@@ -1,9 +1,8 @@
 from fastapi import Depends
 
-from application import TaskApp, UserApp
+from user.app import UserService, UserApp
+from task.app import TaskService, TaskApp
 from .dependencies import get_task_service, get_user_service
-from services.task_service import TaskService
-from services.user_service import UserService
 
 
 class TaskTrackerApp:

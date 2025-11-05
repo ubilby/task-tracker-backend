@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 from fastapi import Depends, APIRouter, Header, HTTPException
 
 from application.app import get_app_instance, TaskTrackerApp
-from api.schemas.user import DeleteResponse
-from api.schemas.task import TaskCreateRequest, TaskResponse, TaskUpdateStatusRequest
+from user.api.schema import DeleteResponse
+from task.api.schema import TaskCreateRequest, TaskResponse, TaskUpdateStatusRequest
 
 
 load_dotenv()
@@ -28,8 +28,8 @@ async def create_task(
     #if not is_bot:
 #        raise HTTPException(status_code=403, detail="Недостаточно прав")
 
-    if not hasattr(request, "user_id") or request.user_id is None:
-        raise HTTPException(status_code=400, detail="user_id обязателен для бота")
+    if not hasattr(request, "telegram_id") or request.telegram_id is None:
+        raise HTTPException(status_code=400, detail="telegram_id обязателен для бота")
 
     task = await tracker.tasks.create_task(request)
 

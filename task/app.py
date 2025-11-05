@@ -1,8 +1,8 @@
 from typing import Any, Dict, List
 
-from domain.dto.dtos import CreateTaskDTO, TaskCreateRawData
-from domain.models.task import Task
-from services.task_service import TaskService
+from task.domain.model import Task
+from task.dto import CreateTaskDTO, TaskCreateRawData
+from task.service import TaskService
 
 
 class TaskApp:

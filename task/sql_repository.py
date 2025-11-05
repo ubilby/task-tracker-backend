@@ -4,9 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from domain.models.task import Task
-from domain.models.user import User
-from domain.repositories.task_repository import TaskRepository
+from task.domain.model import Task, User
+from task.domain.repository import TaskRepository
 from infrastructure.db.models import DBTask
 
 class SQLAlchemyTaskRepository(TaskRepository):

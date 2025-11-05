@@ -1,11 +1,11 @@
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from domain.repositories import TaskRepository, UserRepository
 from infrastructure.db.database import get_session
-from infrastructure.repositories.sqlalchemy import SQLAlchemyUserRepository, SQLAlchemyTaskRepository
-from services.user_service import UserService
-from services.task_service import TaskService
+from task.sql_repository import SQLAlchemyTaskRepository, TaskRepository
+from user.sql_repository import SQLAlchemyUserRepository, UserRepository
+from .app import UserService, UserApp
+from .app import TaskService, TaskApp
 
 # 1. Зависимость для UserRepository (скрывает сложность SQLAlchemy)
 def get_user_repo(session: AsyncSession = Depends(get_session)) -> UserRepository:
@@ -28,3 +28,23 @@ def get_task_service(
     user_repo: UserRepository = Depends(get_user_repo)
 ) -> TaskService:
     return TaskService(task_repo, user_repo)
+
+class TaskTrackerApp:
+    """Фасад верхнего уровня, объединяющий все части приложения."""
+
+    def __init__(
+        self,
+        user_service: UserService, 
+        task_service: TaskService
+    ):
+        self.users = UserApp(user_service)
+        self.tasks = TaskApp(task_service)
+
+
+async def get_app_instance(
+    user_service: UserService = Depends(get_user_service),
+    task_service: TaskService = Depends(get_task_service)
+) -> TaskTrackerApp:
+
+    return TaskTrackerApp(user_service=user_service, task_service=task_service)
+

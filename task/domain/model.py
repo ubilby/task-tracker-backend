@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Optional
 
-from .user import User
+from user.domain.model import User
 
 
 @dataclass

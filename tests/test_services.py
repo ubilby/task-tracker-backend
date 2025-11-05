@@ -8,14 +8,13 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from domain.models.user import User
-from domain.models.task import Task
-from domain.dto.dtos import CreateTaskDTO
-from infrastructure.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
-from infrastructure.repositories.sqlalchemy.task_repository import SQLAlchemyTaskRepository
+from task.domain.model import Task, User
+from task.dto import CreateTaskDTO
+from user.sql_repository import SQLAlchemyUserRepository
+from task.sql_repository import SQLAlchemyTaskRepository
 from infrastructure.db.database import engine
-from services.user_service import UserService
-from services.task_service import TaskService
+from user.service import UserService
+from task.service import TaskService
 
 
 @pytest.fixture

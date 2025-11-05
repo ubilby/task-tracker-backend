@@ -9,12 +9,10 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
-from domain.models.user import User
-from domain.models.task import Task
 from infrastructure.db.database import engine
 from infrastructure.db.models import Base
-from infrastructure.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
-from infrastructure.repositories.sqlalchemy.task_repository import SQLAlchemyTaskRepository
+from user.sql_repository import SQLAlchemyUserRepository, User
+from task.sql_repository import SQLAlchemyTaskRepository, Task
 
 
 @pytest_asyncio.fixture(scope="session", autouse=True)

@@ -2,8 +2,8 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from domain.dto.dtos import TaskCreateRawData
-from domain.models import User
+from task.dto import TaskCreateRawData
+from user.domain.model import User
 
 class TaskCreateRequest(TaskCreateRawData):
     ...
