@@ -4,7 +4,7 @@ launch:
 uvicorn main:app --reload
 ```
 
-###To create db with migrations
+### To create db with migrations
 init alembic
 create db
 make migrations -m "<name>"
