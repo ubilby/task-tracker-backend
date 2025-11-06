@@ -5,10 +5,10 @@ uvicorn main:app --reload
 ```
 
 ### To create db with migrations
-init alembic;
-create db;
-make migrations -m "{name}";
-apply migrations:
+init alembic\n
+create db\n
+make migrations -m "{name}"\n
+apply migrations\n
 ```bash
 alembic init alembic
 alembic upgrade head
